@@ -1,0 +1,18 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+
+[packages]
+kubernetes = "==11.0.0"
+PyYAML = "==5.3.1"
+requests = "==2.23.0"
+typer = {extras = ["all"], version = "0.2.1"}
+
+[requires]
+python_version = "3.8"
+
+[scripts]
+nexus3casc = "python nexus3casc.py"

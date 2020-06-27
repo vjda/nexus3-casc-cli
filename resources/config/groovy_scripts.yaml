@@ -1,0 +1,17 @@
+scripts:
+  - name: ScriptBaseClass
+    send_args: false # default true
+  - name: setupAnonymousAccess
+  - name: setupRealms
+  - name: syncCleanupPolicies
+  - name: syncContentSelectors
+  - name: syncRoutingRules
+  - name: syncCustomPrivileges
+  - name: syncCustomRoles
+  - name: syncCustomLocalUsers
+  - name: syncBlobStores
+  - name: syncRepositories
+  - name: setupBaseUrl
+  - name: setupHttpProxy
+  - name: setupEmailServer
+  - name: setupAdminPassword

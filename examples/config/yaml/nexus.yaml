@@ -1,0 +1,897 @@
+nexus:
+  baseUrl: http://localhost:8081
+  anonymousAccessEnabled: false
+  adminPassword: my_str0ngp_@ssw0rd
+  defaults:
+    adminUser: admin
+    adminPassword: admin123
+  deleteUnknownItems:
+    blobstores: true
+    contentSelectors: true
+    cleanupPolicies: true
+    routingRules: true
+    repos: true
+    ldapConnections: true
+    customLocalUsers: true
+    customRoles: true
+    customPrivileges: true
+
+realms:
+  - name: Conan Bearer Token Realm
+    enabled: false
+  - name: Default Role Realm
+    enabled: false
+  - name: Docker Bearer Token Realm
+    enabled: false
+  - name: LDAP Realm
+    enabled: false
+  - name: Local Authenticating Realm
+    enabled: true
+  - name: Local Authorizing Realm
+    enabled: true
+  - name: npm Bearer Token Realm
+    enabled: false
+  - name: NuGet API-Key Realm
+    enabled: false
+  - name: Rut Auth Realm
+    enabled: false
+
+httpClient:
+  userAgentSuffix: NRXM3-client
+  timeout: 30
+  retries: 2
+  excludeHosts:
+    - localhost
+    - example.com
+    - domain.com
+  httpProxy:
+    host: proxy.acme.com
+    port: 8080
+    authentication:
+      username: proxyuser
+      password: pr0xyp@ss
+      ntlmHost: ntlm.acme.com
+      ntlmDomain: acme.com
+  httpsProxy:
+    host: proxy.acme.com
+    port: 8443
+    authentication:
+      username: proxyuser
+      password: pr0xyp@ss
+      ntlmHost: ntlm.acme.com
+      ntlmDomain: acme.com
+
+blobStores:
+- name: default
+  type: file
+  path: default
+- name: local
+  type: file
+  path: local
+- name: remote
+  type: file
+  path: /tmp/custom/remote
+- name: group
+  type: file
+  path: blobstore/group
+- name: s3-blobstore
+  type: s3
+  config:
+    bucket: s3-blobstore
+    accessKeyId: AKIAIOSFODNN7EXAMPLE
+    secretAccessKey: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+
+cleanupPolicies:
+- name: purge-snapshots
+  format: maven2
+  notes: Delete maven snapshots downloaded more than one week ago
+  mode: delete
+  criteria:
+    lastBlobUpdated: 30
+    lastDownloaded: 7
+    preRelease: PRERELEASES
+    regexKey: (org|com)/.*
+- name: purge-helm-artifacts-with-one-year
+  format: helm
+  notes: Delete helm artifacts older than one year
+  mode: delete
+  criteria:
+    lastBlobUpdated: 365
+    lastDownloaded: 182
+    regexKey: "(org|com)/company/.*"
+
+routingRules:
+- name: block-com-company-department
+  description: Blocks artifacts with path com/company/department
+  mode: block
+  matchers:
+  - ^com/company/department/.*
+- name: allow-some
+  mode: allow
+  description: Allow artifacts from specific paths
+  matchers:
+  - company/department2/.*
+  - .*/department1/.*
+  - ^com/.*/engineering/.*
+
+contentSelectors:
+- name: helm-all-selector
+  format: csel
+  description: Search for all helm artifacts
+  expression: format == "helm"
+- name: raw-selector
+  format: csel
+  description: Search for raw artifacts in specific path
+  expression: format == "maven2" and path =^ "/org/sonatype/nexus"
+
+repositories:
+- name: npm-group
+  format: npm
+  type: group
+  online: true
+  storage:
+    blobStoreName: group
+    strictContentTypeValidation: true
+  group:
+    memberNames:
+    - npm-hosted
+    - npm-proxy
+- name: yum-proxy
+  format: yum
+  type: proxy
+  online: true
+  storage:
+    blobStoreName: remote
+    strictContentTypeValidation: true
+  proxy:
+    remoteUrl: http://mirror.centos.org/centos
+    contentMaxAge: 1440
+    metadataMaxAge: 1440
+  negativeCache:
+    enabled: true
+    timeToLive: 1440
+  httpClient:
+    blocked: false
+    autoBlock: true
+- name: docker-group
+  format: docker
+  type: group
+  online: true
+  storage:
+    blobStoreName: group
+    strictContentTypeValidation: true
+  group:
+    memberNames:
+    - docker-remote
+    - docker-releases
+  docker:
+    v1Enabled: false
+    forceBasicAuth: true
+    httpsPort: 5002
+- name: nuget.org-proxy
+  format: nuget
+  type: proxy
+  online: true
+  storage:
+    blobStoreName: default
+    strictContentTypeValidation: true
+  proxy:
+    remoteUrl: https://www.nuget.org/api/v2/
+    contentMaxAge: 1440
+    metadataMaxAge: 1440
+  negativeCache:
+    enabled: true
+    timeToLive: 1440
+  httpClient:
+    blocked: false
+    autoBlock: false
+    connection:
+      enableCircularRedirects: false
+      enableCookies: false
+  nugetProxy:
+    queryCacheItemMaxAge: 1440
+- name: p2-proxy
+  format: p2
+  type: proxy
+  online: true
+  storage:
+    blobStoreName: remote
+    strictContentTypeValidation: true
+  cleanup:
+  proxy:
+    remoteUrl: http://download.eclipse.org/releases/2019-09
+    contentMaxAge: 1440
+    metadataMaxAge: 1440
+  negativeCache:
+    enabled: true
+    timeToLive: 1440
+  httpClient:
+    blocked: false
+    autoBlock: false
+- name: helm-releases
+  format: helm
+  type: hosted
+  online: true
+  storage:
+    blobStoreName: local
+    strictContentTypeValidation: true
+    writePolicy: ALLOW_ONCE
+  cleanup:
+    policyNames:
+    - remove-old-helm-artifacts
+- name: npm-hosted
+  format: npm
+  type: hosted
+  online: true
+  storage:
+    blobStoreName: local
+    strictContentTypeValidation: true
+    writePolicy: ALLOW_ONCE
+- name: conan-proxy
+  format: conan
+  type: proxy
+  online: true
+  storage:
+    blobStoreName: remote
+    strictContentTypeValidation: true
+  proxy:
+    remoteUrl: https://conan.bintray.com
+    contentMaxAge: 1440
+    metadataMaxAge: 1440
+  negativeCache:
+    enabled: true
+    timeToLive: 1440
+  httpClient:
+    blocked: false
+    autoBlock: true
+- name: r-hosted
+  format: r
+  type: hosted
+  online: true
+  storage:
+    blobStoreName: local
+    strictContentTypeValidation: true
+    writePolicy: ALLOW
+- name: bower-hosted
+  format: bower
+  type: hosted
+  online: true
+  storage:
+    blobStoreName: local
+    strictContentTypeValidation: true
+    writePolicy: ALLOW_ONCE
+- name: bower-remote
+  format: bower
+  type: proxy
+  online: true
+  storage:
+    blobStoreName: remote
+    strictContentTypeValidation: true
+  proxy:
+    remoteUrl: https://registry.bower.io
+    contentMaxAge: 1440
+    metadataMaxAge: 1440
+  negativeCache:
+    enabled: true
+    timeToLive: 1440
+  httpClient:
+    blocked: true
+    autoBlock: true
+    connection:
+      retries:
+      userAgentSuffix:
+      timeout:
+      enableCircularRedirects: false
+      enableCookies: false
+    authentication:
+  bower:
+    rewritePackageUrls: true
+- name: go-group
+  format: go
+  online: true
+  storage:
+    blobStoreName: group
+    strictContentTypeValidation: true
+  group:
+    memberNames:
+    - go-remote
+  type: group
+- name: cocoa-remote
+  format: cocoapods
+  type: proxy
+  online: true
+  storage:
+    blobStoreName: remote
+    strictContentTypeValidation: true
+  proxy:
+    remoteUrl: https://cdn.cocoapods.org/
+    contentMaxAge: 1440
+    metadataMaxAge: 1440
+  negativeCache:
+    enabled: true
+    timeToLive: 1440
+  httpClient:
+    blocked: false
+    autoBlock: true
+- name: npm-proxy
+  format: npm
+  type: proxy
+  online: true
+  storage:
+    blobStoreName: remote
+    strictContentTypeValidation: true
+  cleanup:
+  proxy:
+    remoteUrl: https://registry.npmjs.org
+    contentMaxAge: 1440
+    metadataMaxAge: 1440
+  negativeCache:
+    enabled: true
+    timeToLive: 1440
+  routingRuleName: allow-some
+- name: nuget-group
+  format: nuget
+  online: true
+  storage:
+    blobStoreName: default
+    strictContentTypeValidation: true
+  group:
+    memberNames:
+    - nuget-hosted
+    - nuget.org-proxy
+  type: group
+- name: maven-snapshots
+  format: maven2
+  type: hosted
+  online: true
+  storage:
+    blobStoreName: default
+    strictContentTypeValidation: false
+    writePolicy: ALLOW
+  cleanup:
+    policyNames:
+    - purge-snapshots
+  maven:
+    versionPolicy: SNAPSHOT
+    layoutPolicy: PERMISSIVE
+- name: rubygems-group
+  format: rubygems
+  online: true
+  storage:
+    blobStoreName: group
+    strictContentTypeValidation: true
+  group:
+    memberNames:
+    - rubygems-hosted
+    - rubygems-proxy
+  type: group
+- name: bower-group
+  format: bower
+  online: true
+  storage:
+    blobStoreName: group
+    strictContentTypeValidation: true
+  group:
+    memberNames:
+    - bower-hosted
+    - bower-remote
+  type: group
+- name: r-group
+  format: r
+  online: true
+  storage:
+    blobStoreName: group
+    strictContentTypeValidation: true
+  group:
+    memberNames:
+    - r-hosted
+    - r-proxy
+  type: group
+- name: nuget-hosted
+  format: nuget
+  type: hosted
+  online: true
+  storage:
+    blobStoreName: default
+    strictContentTypeValidation: true
+    writePolicy: ALLOW
+- name: helm-proxy
+  format: helm
+  type: proxy
+  online: true
+  storage:
+    blobStoreName: remote
+    strictContentTypeValidation: true
+  proxy:
+    remoteUrl: https://kubernetes-charts.endpoint.googleapis.com/
+    contentMaxAge: 1440
+    metadataMaxAge: 1440
+  negativeCache:
+    enabled: true
+    timeToLive: 1440
+  httpClient:
+    blocked: false
+    autoBlock: true
+    connection:
+      retries:
+      userAgentSuffix:
+      timeout:
+      enableCircularRedirects: false
+      enableCookies: false
+    authentication:
+  routingRuleName:
+- name: raw-hosted
+  format: raw
+  type: hosted
+  online: true
+  storage:
+    blobStoreName: local
+    strictContentTypeValidation: false
+    writePolicy: ALLOW
+- name: yum-hosted
+  format: yum
+  type: hosted
+  online: true
+  storage:
+    blobStoreName: local
+    strictContentTypeValidation: true
+    writePolicy: ALLOW_ONCE
+  yum:
+    repodataDepth: 5
+    deployPolicy: STRICT
+- name: pypi-hosted
+  format: pypi
+  type: hosted
+  online: true
+  storage:
+    blobStoreName: local
+    strictContentTypeValidation: true
+    writePolicy: ALLOW_ONCE
+- name: pypi-group
+  format: pypi
+  online: true
+  storage:
+    blobStoreName: group
+    strictContentTypeValidation: true
+  group:
+    memberNames:
+    - pypi-hosted
+    - pypi-proxy
+  type: group
+- name: r-proxy
+  format: r
+  type: proxy
+  online: true
+  storage:
+    blobStoreName: remote
+    strictContentTypeValidation: true
+  cleanup:
+  proxy:
+    remoteUrl: https://cran.r-project.org/
+    contentMaxAge: 1440
+    metadataMaxAge: 1440
+  negativeCache:
+    enabled: true
+    timeToLive: 1440
+- name: apt-releases
+  format: apt
+  type: hosted
+  online: true
+  storage:
+    blobStoreName: local
+    strictContentTypeValidation: true
+    writePolicy: ALLOW_ONCE
+  cleanup:
+  apt:
+    distribution: bionic
+  aptSigning:
+    keypair: string
+    passphrase: string
+- name: maven-releases
+  format: maven2
+  type: hosted
+  online: true
+  storage:
+    blobStoreName: default
+    strictContentTypeValidation: false
+    writePolicy: ALLOW_ONCE
+  cleanup:
+    policyNames: []
+  maven:
+    versionPolicy: RELEASE
+    layoutPolicy: STRICT
+- name: go-remote
+  format: go
+  type: proxy
+  online: true
+  storage:
+    blobStoreName: remote
+    strictContentTypeValidation: true
+  proxy:
+    remoteUrl: https://gonexus.dev
+    contentMaxAge: 1440
+    metadataMaxAge: 1440
+  negativeCache:
+    enabled: true
+    timeToLive: 1440
+- name: raw-group
+  format: raw
+  online: true
+  storage:
+    blobStoreName: group
+    strictContentTypeValidation: true
+  group:
+    memberNames:
+    - raw-hosted
+    - raw-proxy
+  type: group
+- name: apt-proxy
+  format: apt
+  type: proxy
+  online: true
+  storage:
+    blobStoreName: remote
+    strictContentTypeValidation: true
+  cleanup:
+  apt:
+    distribution: bionic
+    flat: true
+  proxy:
+    remoteUrl: http://myserver/path/to/repo
+    contentMaxAge: 1440
+    metadataMaxAge: 1440
+  negativeCache:
+    enabled: true
+    timeToLive: 1440
+  httpClient:
+    blocked: true
+    autoBlock: true
+    connection:
+      retries: 3
+      userAgentSuffix: user-agent-custom
+      timeout: 30
+      enableCircularRedirects: true
+      enableCookies: true
+    authentication:
+      type: username
+      username: username
+      password: password
+      ntlmHost:
+      ntlmDomain:
+  routingRuleName:
+- name: rubygems-hosted
+  format: rubygems
+  type: hosted
+  online: true
+  storage:
+    blobStoreName: local
+    strictContentTypeValidation: true
+    writePolicy: ALLOW_ONCE
+- name: conda-proxy
+  format: conda
+  type: proxy
+  online: true
+  storage:
+    blobStoreName: remote
+    strictContentTypeValidation: true
+  cleanup:
+  proxy:
+    remoteUrl: https://repo.continuum.io/pkgs/
+    contentMaxAge: 1440
+    metadataMaxAge: 1440
+  negativeCache:
+    enabled: true
+    timeToLive: 1440
+- name: docker-remote
+  format: docker
+  type: proxy
+  online: true
+  storage:
+    blobStoreName: remote
+    strictContentTypeValidation: true
+  docker:
+    v1Enabled: false
+    forceBasicAuth: true
+    httpPort:
+    httpsPort:
+  dockerProxy:
+    indexType: HUB
+    indexUrl:
+    foreignLayerUrlWhitelist: []
+  proxy:
+    remoteUrl: https://registry-1.docker.io
+    contentMaxAge: 1440
+    metadataMaxAge: 1440
+  negativeCache:
+    enabled: true
+    timeToLive: 1440
+  httpClient:
+    blocked: false
+    autoBlock: true
+    connection:
+      retries:
+      userAgentSuffix:
+      timeout:
+      enableCircularRedirects: false
+      enableCookies: false
+- name: gitlfs-hosted
+  format: gitlfs
+  type: hosted
+  online: true
+  storage:
+    blobStoreName: local
+    strictContentTypeValidation: true
+    writePolicy: ALLOW_ONCE
+  cleanup:
+- name: raw-proxy
+  format: raw
+  online: true
+  storage:
+    blobStoreName: remote
+    strictContentTypeValidation: true
+  cleanup:
+  proxy:
+    remoteUrl: https://nodejs.org/dist/
+    contentMaxAge: 1440
+    metadataMaxAge: 1440
+  negativeCache:
+    enabled: true
+    timeToLive: 1440
+  type: proxy
+- name: pypi-proxy
+  format: pypi
+  type: proxy
+  online: true
+  storage:
+    blobStoreName: remote
+    strictContentTypeValidation: true
+  cleanup:
+  proxy:
+    remoteUrl: https://pypi.org/
+    contentMaxAge: 1440
+    metadataMaxAge: 1440
+  negativeCache:
+    enabled: true
+    timeToLive: 1440
+  httpClient:
+    blocked: false
+    autoBlock: true
+  routingRuleName: block-com-company-department
+- name: maven-public
+  format: maven2
+  type: group
+  online: true
+  storage:
+    blobStoreName: default
+    strictContentTypeValidation: true
+  cleanup:
+  - remove-snapshots
+  group:
+    memberNames:
+    - maven-releases
+    - maven-snapshots
+  httpClient:
+    connection:
+      useTrustStore: true
+- name: yum-group
+  format: yum
+  type: group
+  online: true
+  storage:
+    blobStoreName: group
+    strictContentTypeValidation: true
+  group:
+    memberNames:
+    - yum-proxy
+    - yum-hosted
+- name: docker-releases
+  format: docker
+  type: hosted
+  online: true
+  storage:
+    blobStoreName: local
+    strictContentTypeValidation: true
+    writePolicy: ALLOW_ONCE
+  cleanup:
+  docker:
+    v1Enabled: false
+    forceBasicAuth: true
+    httpPort: 5001
+    httpsPort: 5000
+- name: rubygems-proxy
+  format: rubygems
+  online: true
+  storage:
+    blobStoreName: remote
+    strictContentTypeValidation: true
+  proxy:
+    remoteUrl: https://rubygems.org/
+    contentMaxAge: 1440
+    metadataMaxAge: 1440
+  negativeCache:
+    enabled: true
+    timeToLive: 1440
+  type: proxy
+- name: maven-central
+  format: maven2
+  type: proxy
+  online: true
+  storage:
+    blobStoreName: remote
+    strictContentTypeValidation: true
+    writePolicy: ALLOW
+  cleanup:
+    policyNames:
+    - remove-prereleases
+  proxy:
+    remoteUrl: https://repo1.maven.org/maven2/
+    contentMaxAge: -1
+    metadataMaxAge: 1440
+  negativeCache:
+    enabled: true
+    timeToLive: 1440
+  httpClient:
+    blocked: false
+    autoBlock: true
+    connection:
+      retries: 
+      userAgentSuffix: 
+      timeout: 
+      enableCircularRedirects: false
+      enableCookies: false
+    authentication: 
+  routingRuleName: block-com-company-department
+  maven:
+    versionPolicy: MIXED
+    layoutPolicy: STRICT
+
+smtpConnection:
+  enabled: true
+  host: my-smtp-host
+  port: 587
+  username: emailuser
+  password: p@assw0rd
+  fromAddress: nexus@example.org
+  subjectPrefix: "[NEXUS] "
+  startTlsEnabled: true
+  startTlsRequired: true
+  sslOnConnectEnabled: false
+  sslServerIdentityCheckEnabled: false
+  nexusTrustStoreEnabled: false
+
+ldapConnections:
+- name: ldap-server
+  protocol: ldap
+  useTrustStore: true
+  host: string
+  port: 636
+  searchBase: dc=example,dc=com
+  authScheme: NONE
+  authRealm: example.com
+  authUsername: string
+  connectionTimeoutSeconds: 1
+  connectionRetryDelaySeconds: 0
+  maxIncidentsCount: 0
+  userBaseDn: ou=people
+  userSubtree: true
+  userObjectClass: inetOrgPerson
+  userLdapFilter: "(|(mail=*@example.com)(uid=dom*))"
+  userIdAttribute: uid
+  userRealNameAttribute: cn
+  userEmailAddressAttribute: mail
+  userPasswordAttribute: string
+  ldapGroupsAsRoles: true
+  groupType: static
+  groupBaseDn: ou=Group
+  groupSubtree: true
+  groupObjectClass: posixGroup
+  groupIdAttribute: cn
+  groupMemberAttribute: memberUid
+  groupMemberFormat: uid=${username},ou=people,dc=example,dc=com
+  userMemberOfAttribute: memberOf
+  authPassword: superpass123
+
+customUsers:
+  local:
+  - userId: anonymous
+    password:
+    firstName: Anonymous
+    lastName: User
+    emailAddress: anonymous@example.org
+    source: default
+    status: active
+    roles:
+    - nx-anonymous
+    # externalRoles: []
+  - userId: admin
+    firstName: Administrator
+    lastName: User
+    emailAddress: admin@example.org
+    source: default
+    status: active
+    roles:
+    - nx-admin
+  - userId: james
+    password: Th15_1s_Aw3s0m3
+    firstName: James
+    lastName: Brown
+    emailAddress: jbrown@example.com
+    source: default
+    status: active
+    roles:
+    - my-admin-role
+  ldap: []
+  # ldap:
+  #   - username: j.doe
+  #     state: present
+  #     roles:
+  #       - "nx-admin"
+
+customRoles:
+  - id: my-admin-role
+    source: default
+    name: my-admin-role
+    description: Custom Administrator Role
+    privileges: []
+    roles:
+    - nx-admin
+  - id: custom-anonymous-role
+    source: default
+    name: custom-anonymous-role
+    description: Custom Anonymous Role
+    privileges:
+    - nx-healthcheck-read
+    - nx-search-read
+    - nx-repository-view-*-*-read
+    - nx-repository-view-*-*-browse
+    roles: []
+  - id: custom-maven-developer-role
+    source: default
+    name: Maven Developer
+    description: Maven Developer Role
+    privileges:
+    - nx-repository-view-maven2-*-browse
+    - nx-repository-view-maven2-*-add
+    - nx-repository-view-maven2-*-read
+    roles: []
+
+customPrivileges:
+- type: wildcard
+  name: my-wildcard-all
+  description: All permissions
+  pattern: "nexus:*"
+- type: application
+  name: my-app-analytics-all
+  description: All permissions for Analytics
+  actions:
+  - ALL
+  domain: analytics
+- type: repository-admin
+  name: my-maven-repository-admin
+  description: All privileges for all maven repositories administration
+  actions:
+  - ALL
+  format: maven2
+  repository: "*"
+- type: repository-view
+  name: my-nuget-repository-view-add
+  description: Add permission for all nuget repository views
+  actions:
+  - ADD
+  format: nuget
+  repository: "*"
+- type: repository-content-selector
+  name: my-content-selectors-all
+  description: Add permission for content selector for raw repositories
+  actions:
+  - ADD
+  format: null
+  repository: "*-raw"
+  contentSelector: raw-selector
+- type: script
+  name: my-script-*-add
+  description: Add permission for Scripts
+  actions:
+  - ADD
+  - READ
+  scriptName: "*"

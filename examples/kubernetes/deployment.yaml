@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nexus3casc-deployment
+  labels:
+    app: nexus3casc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nexus3casc
+  template:
+    metadata:
+      labels:
+        app: nexus3casc
+    spec:
+      containers:
+      - name: nexus3casc
+        image: vjda/nexus3casc-cli:0.1.0
+        args:
+          - from-k8s
+          - --namespace=nexus
+          - --label=nexus3casc
+          - --label-value=active
+          - --resource=both
+          - --watch
+          - --refresh-period=3
+        env:
+          - name: NEXUS3_CASC_LOG_LEVEL
+            value: DEBUG
+      serviceAccountName: default
+

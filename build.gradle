@@ -1,0 +1,49 @@
+apply plugin: 'groovy'
+apply plugin: 'maven'
+
+group = 'io.vjda.automation'
+version = '1.0-SNAPSHOT'
+
+description = """Base project to configure a simple IDE environment with code completion for developing NXRM3
+Integrations scripts"""
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+repositories {
+  mavenLocal()
+  mavenCentral()
+  jcenter()
+  google()
+}
+
+sourceSets {
+    main.groovy.srcDirs = ['resources/scripts']
+    main.resources.srcDirs = ['resources-dev']
+}
+
+ext.versions = [
+    nxrm3: '3.23.0-03'
+]
+
+dependencies {
+  compile group: 'org.sonatype.nexus', name: 'nexus-core', version: versions.nxrm3
+  compile group: 'org.sonatype.nexus', name: 'nexus-script', version: versions.nxrm3
+  compile group: 'org.sonatype.nexus', name: 'nexus-security', version: versions.nxrm3
+  compile group: 'org.sonatype.nexus', name: 'nexus-repository', version: versions.nxrm3
+  compile group: 'org.sonatype.nexus', name: 'nexus-cleanup', version: versions.nxrm3
+  compile group: 'org.sonatype.nexus.plugins', name: 'nexus-script-plugin', version: versions.nxrm3
+  compile group: 'org.sonatype.nexus.plugins', name: 'nexus-repository-maven', version: versions.nxrm3
+  compile group: 'org.sonatype.nexus.plugins', name: 'nexus-repository-raw', version: versions.nxrm3
+  compile group: 'org.sonatype.nexus.plugins', name: 'nexus-repository-cocoapods', version: versions.nxrm3
+  compile group: 'org.sonatype.nexus.plugins', name: 'nexus-repository-pypi', version: versions.nxrm3
+  compile group: 'org.sonatype.nexus.plugins', name: 'nexus-repository-npm', version: versions.nxrm3
+
+  compile group: 'org.sonatype.nexus.plugins', name: 'nexus-repository-conan', version: '1.0.2'
+  compile group: 'org.sonatype.nexus.plugins', name: 'nexus-blobstore-google-cloud', version: '0.11.0'
+  compile group: 'org.sonatype.nexus.plugins', name: 'nexus-repository-helm', version: '1.0.4'
+  compile group: 'org.sonatype.nexus.plugins', name: 'nexus-repository-p2', version: '1.0.3'
+  compile group: 'org.sonatype.nexus.plugins', name: 'nexus-repository-r-it', version: '1.1.3'
+
+  //compile group: 'org.sonatype.nexus.plugins', name: 'nexus-ldap-plugin', version: versions.nxrm3
+}

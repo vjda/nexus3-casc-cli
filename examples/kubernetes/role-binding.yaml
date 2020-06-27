@@ -1,0 +1,13 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: read-configmaps-secrets
+  namespace: nexus
+subjects:
+  - kind: ServiceAccount
+    name: default
+    namespace: nexus
+roleRef:
+  kind: Role
+  name: configmap-secret-reader
+  apiGroup: rbac.authorization.k8s.io

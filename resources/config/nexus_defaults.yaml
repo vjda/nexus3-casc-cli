@@ -1,0 +1,43 @@
+nexus:
+  baseUrl: http://localhost:8081
+  anonymousAccessEnabled: false
+  defaults:
+    adminUser: admin
+    adminPassword: admin123
+  deleteUnknownItems:
+    blobstores: false
+    contentSelectors: false
+    cleanupPolicies: false
+    routingRules: false
+    repos: false
+    ldapConnections: false
+    customLocalUsers: false
+    customRoles: false
+    customPrivileges: false
+
+realms: []
+
+httpClient: {}
+
+blobStores: []
+
+cleanupPolicies: []
+
+routingRules: []
+
+contentSelectors: []
+
+repositories: []
+
+smtpConnection:
+  enabled: false
+
+ldapConnections: []
+
+customUsers:
+  local: []
+  ldap: []
+
+customRoles: []
+
+customPrivileges: []
