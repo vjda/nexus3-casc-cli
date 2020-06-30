@@ -667,16 +667,16 @@ Options:
 
 ## Run the CLI as docker container
 
-Nexus3CasC is published on [Dockerhub](https://hub.docker.com/r/vjda/nexus3casc-cli). You can use it as docker image executing the following command:
+Nexus3CasC is published on [quay.io](https://quay.io/repository/vjda/nexus3casc-cli). You can use it as docker image executing the following command:
 
 ```sh
-docker run -v /path/to/directory:/tmp/config vjda/nexus3casc-cli:0.1.0 from-path --config /tmp/config/nexus.yaml
+docker run -v /path/to/directory:/tmp/config quay.io/vjda/nexus3casc-cli:latest from-path --config /tmp/config/nexus.yaml
 ```
 
 Or, you can set `NEXUS3_CASC_CONFIG_PATH` instead of passing `--config /tmp/config/nexus.yaml`
 
 ```sh
-docker run -v /path/to/directory:/tmp/config -e NEXUS3_CASC_CONFIG_PATH=/tmp/config/nexus.yaml vjda/nexus3casc-cli:0.1.0 from-path
+docker run -v /path/to/directory:/tmp/config -e NEXUS3_CASC_CONFIG_PATH=/tmp/config/nexus.yaml quay.io/vjda/nexus3casc-cli:latest from-path
 ```
 
 > You must use `-v` to mount a volume so that the YAML file is available inside the docker container. Otherwise, it cannot access to it and the command will fail.
