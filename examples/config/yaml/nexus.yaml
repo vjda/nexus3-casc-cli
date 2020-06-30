@@ -895,3 +895,66 @@ customPrivileges:
   - ADD
   - READ
   scriptName: "*"
+
+certificates:
+  servers:
+    - cdn.cocoapods.org
+    - conan.bintray.com
+    - cran.r-project.org
+    - download.eclipse.org
+    - kubernetes-charts.endpoint.googleapis.com
+    - mirror.centos.org
+    - nodejs.org
+    - pypi.org
+    - registry-1.docker.io
+    - registry.bower.io
+    - registry.npmjs.org
+    - repo.continuum.io
+    - repo1.maven.org
+    - rubygems.org
+    - storage.googleapis.com
+    - www.nuget.org
+  pemTexts:
+    - content: |-
+        -----BEGIN CERTIFICATE-----
+        MIIHTjCCBjagAwIBAgIQa5LMK51h2Z4IAAAAAEZzsTANBgkqhkiG9w0BAQsFADBC
+        MQswCQYDVQQGEwJVUzEeMBwGA1UEChMVR29vZ2xlIFRydXN0IFNlcnZpY2VzMRMw
+        EQYDVQQDEwpHVFMgQ0EgMU8xMB4XDTIwMDYxMDA5MTYyNVoXDTIwMDkwMjA5MTYy
+        NVowcjELMAkGA1UEBhMCVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcT
+        DU1vdW50YWluIFZpZXcxEzARBgNVBAoTCkdvb2dsZSBMTEMxITAfBgNVBAMMGCou
+        c3RvcmFnZS5nb29nbGVhcGlzLmNvbTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCC
+        AQoCggEBALEeUhptbYTwwjAZbI+acwYyUgNgc6dejR6Lq58rh36KKT9bEnvp5GXa
+        /veW/7HLEd6yhe46biQKELTAwefXKA885u+wQeMem7PrNyEVTgff+wjCnEz/QLBs
+        qu4UzvBPcMQDleOP8kTsNBQNN/lUArRF2ESwTIUzkw1bgkvud4hbQTHIdLELjkCl
+        L5ufb1AaEF8dBT2DijOwLy3Fm+XlNg6ztCj7K+QAAUqhIqN2kd+mJ3GxguBgCH3Q
+        SbRYywgMoVH3wQz5mlWIs4jQckbgmog5L3m+l4zk/eJpD5egGiOYzSj8IUb/zdjN
+        lYZMgkF8w5Wz/LAFPpXtraHE83oX5MMCAwEAAaOCBA4wggQKMA4GA1UdDwEB/wQE
+        AwIFoDATBgNVHSUEDDAKBggrBgEFBQcDATAMBgNVHRMBAf8EAjAAMB0GA1UdDgQW
+        BBQUDn/0bKh4/6eM+K0VeuTeq8bEVzAfBgNVHSMEGDAWgBSY0fhuEOvPm+xgnxiQ
+        G6DrfQn9KzBoBggrBgEFBQcBAQRcMFowKwYIKwYBBQUHMAGGH2h0dHA6Ly9vY3Nw
+        LnBraS5nb29nL2d0czFvMWNvcmUwKwYIKwYBBQUHMAKGH2h0dHA6Ly9wa2kuZ29v
+        Zy9nc3IyL0dUUzFPMS5jcnQwggHIBgNVHREEggG/MIIBu4IYKi5zdG9yYWdlLmdv
+        b2dsZWFwaXMuY29tgiQqLmFwcHNwb3QuY29tLnN0b3JhZ2UuZ29vZ2xlYXBpcy5j
+        b22CIiouY29tbW9uZGF0YXN0b3JhZ2UuZ29vZ2xlYXBpcy5jb22CKSouY29udGVu
+        dC1zdG9yYWdlLWRvd25sb2FkLmdvb2dsZWFwaXMuY29tgicqLmNvbnRlbnQtc3Rv
+        cmFnZS11cGxvYWQuZ29vZ2xlYXBpcy5jb22CICouY29udGVudC1zdG9yYWdlLmdv
+        b2dsZWFwaXMuY29tghAqLmdvb2dsZWFwaXMuY29tgiEqLnN0b3JhZ2UtZG93bmxv
+        YWQuZ29vZ2xlYXBpcy5jb22CHyouc3RvcmFnZS11cGxvYWQuZ29vZ2xlYXBpcy5j
+        b22CHyouc3RvcmFnZS5zZWxlY3QuZ29vZ2xlYXBpcy5jb22CIGNvbW1vbmRhdGFz
+        dG9yYWdlLmdvb2dsZWFwaXMuY29tghZzdG9yYWdlLmdvb2dsZWFwaXMuY29tgh1z
+        dG9yYWdlLnNlbGVjdC5nb29nbGVhcGlzLmNvbYIPdW5maWx0ZXJlZC5uZXdzMCEG
+        A1UdIAQaMBgwCAYGZ4EMAQICMAwGCisGAQQB1nkCBQMwMwYDVR0fBCwwKjAooCag
+        JIYiaHR0cDovL2NybC5wa2kuZ29vZy9HVFMxTzFjb3JlLmNybDCCAQUGCisGAQQB
+        1nkCBAIEgfYEgfMA8QB2ALIeBcyLos2KIE6HZvkruYolIGdr2vpw57JJUy3vi5Be
+        AAABcp27Ko8AAAQDAEcwRQIgd6MMtKRRF7G18hpdGog3NINQsuW9vdk7gdqLRDCV
+        /M4CIQCY6NQeRvf5NgmihDWzmpOMPLNmqNFsrdEpgjP6uYY1UAB3AMZSoOxIzrP8
+        qxcJksQ6h0EzCegAZaJiUkAbozYqF8VlAAABcp27KqgAAAQDAEgwRgIhANJ58DxN
+        zyg9Sjenwhl7VMZfdwPPY5k1L/Pwji5S8s41AiEAjrCdS19KqwBBaxagrT/rPsZH
+        PYkBJVCzPLIm0jGeMq8wDQYJKoZIhvcNAQELBQADggEBAMqOLe5vNl4/ThmSFlku
+        WX6iLXmPh6faHRJrVTVO0NNDMI/TTmwBEMYTf2VHEiWlGbe0k7fopkUKvSTGroUT
+        efDMZLL5WsipIG87tfqyOV104e7I/OmJqx7/s9Zq4sild+2iMH8fhkzZqhaPzVn8
+        e526u2i7vo8xPOiHeQsYq7yWf4PPK3wS4xO+0Ov2aG0m2HkeSTkgommoYiGNrMVv
+        xBs5jrz5aMTtocwBPTADl17r5x13nsHhVorlebVHaxRO6clpUxOkhty2bgDP7TWB
+        JRn+L9BHMi+7EfgTJQVIwvjKgsjikfnM2JwLhmCnWFidIL8XW6noCVIaFJgf03Zb
+        vew=
+        -----END CERTIFICATE-----

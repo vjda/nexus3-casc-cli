@@ -12,6 +12,9 @@ Nexus3CasC provides you a way to configure a Nexus 3 server to perform the follo
   * realms
 * Setting HTTP(s) proxies
 * Setting a SMTP connection
+* Importing certificates from...
+  * server addresses
+  * PEM format
 * Creating or updating...
   * blob stores to store objects locally or in AWS S3
   * content selectors
@@ -511,6 +514,99 @@ customPrivileges:
   - READ
   scriptName: "*"                             # required: can be a script name or "*" for all scripts
 ```
+
+#### `certificates`
+
+Add SSL certificates of remote proxy repositories to marked as trusted.
+
+```yaml
+certificates:
+  servers:                              # optional: all below formats are accepted
+    - cdn.cocoapods.org                 # host
+    - conan.bintray.com:443             # host + port
+    - https://cran.r-project.org        # protocol + host
+    - https://download.eclipse.org:443  # protocol + host + port
+  pemTexts:                             # optional
+    - content: |-                       # must be `content: <PEM_CERTIFICATE_CONTENT>`
+        -----BEGIN CERTIFICATE-----
+        MIIHTjCCBjagAwIBAgIQa5LMK51h2Z4IAAAAAEZzsTANBgkqhkiG9w0BAQsFADBC
+        MQswCQYDVQQGEwJVUzEeMBwGA1UEChMVR29vZ2xlIFRydXN0IFNlcnZpY2VzMRMw
+        EQYDVQQDEwpHVFMgQ0EgMU8xMB4XDTIwMDYxMDA5MTYyNVoXDTIwMDkwMjA5MTYy
+        NVowcjELMAkGA1UEBhMCVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcT
+        DU1vdW50YWluIFZpZXcxEzARBgNVBAoTCkdvb2dsZSBMTEMxITAfBgNVBAMMGCou
+        c3RvcmFnZS5nb29nbGVhcGlzLmNvbTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCC
+        AQoCggEBALEeUhptbYTwwjAZbI+acwYyUgNgc6dejR6Lq58rh36KKT9bEnvp5GXa
+        /veW/7HLEd6yhe46biQKELTAwefXKA885u+wQeMem7PrNyEVTgff+wjCnEz/QLBs
+        qu4UzvBPcMQDleOP8kTsNBQNN/lUArRF2ESwTIUzkw1bgkvud4hbQTHIdLELjkCl
+        L5ufb1AaEF8dBT2DijOwLy3Fm+XlNg6ztCj7K+QAAUqhIqN2kd+mJ3GxguBgCH3Q
+        SbRYywgMoVH3wQz5mlWIs4jQckbgmog5L3m+l4zk/eJpD5egGiOYzSj8IUb/zdjN
+        lYZMgkF8w5Wz/LAFPpXtraHE83oX5MMCAwEAAaOCBA4wggQKMA4GA1UdDwEB/wQE
+        AwIFoDATBgNVHSUEDDAKBggrBgEFBQcDATAMBgNVHRMBAf8EAjAAMB0GA1UdDgQW
+        BBQUDn/0bKh4/6eM+K0VeuTeq8bEVzAfBgNVHSMEGDAWgBSY0fhuEOvPm+xgnxiQ
+        G6DrfQn9KzBoBggrBgEFBQcBAQRcMFowKwYIKwYBBQUHMAGGH2h0dHA6Ly9vY3Nw
+        LnBraS5nb29nL2d0czFvMWNvcmUwKwYIKwYBBQUHMAKGH2h0dHA6Ly9wa2kuZ29v
+        Zy9nc3IyL0dUUzFPMS5jcnQwggHIBgNVHREEggG/MIIBu4IYKi5zdG9yYWdlLmdv
+        b2dsZWFwaXMuY29tgiQqLmFwcHNwb3QuY29tLnN0b3JhZ2UuZ29vZ2xlYXBpcy5j
+        b22CIiouY29tbW9uZGF0YXN0b3JhZ2UuZ29vZ2xlYXBpcy5jb22CKSouY29udGVu
+        dC1zdG9yYWdlLWRvd25sb2FkLmdvb2dsZWFwaXMuY29tgicqLmNvbnRlbnQtc3Rv
+        cmFnZS11cGxvYWQuZ29vZ2xlYXBpcy5jb22CICouY29udGVudC1zdG9yYWdlLmdv
+        b2dsZWFwaXMuY29tghAqLmdvb2dsZWFwaXMuY29tgiEqLnN0b3JhZ2UtZG93bmxv
+        YWQuZ29vZ2xlYXBpcy5jb22CHyouc3RvcmFnZS11cGxvYWQuZ29vZ2xlYXBpcy5j
+        b22CHyouc3RvcmFnZS5zZWxlY3QuZ29vZ2xlYXBpcy5jb22CIGNvbW1vbmRhdGFz
+        dG9yYWdlLmdvb2dsZWFwaXMuY29tghZzdG9yYWdlLmdvb2dsZWFwaXMuY29tgh1z
+        dG9yYWdlLnNlbGVjdC5nb29nbGVhcGlzLmNvbYIPdW5maWx0ZXJlZC5uZXdzMCEG
+        A1UdIAQaMBgwCAYGZ4EMAQICMAwGCisGAQQB1nkCBQMwMwYDVR0fBCwwKjAooCag
+        JIYiaHR0cDovL2NybC5wa2kuZ29vZy9HVFMxTzFjb3JlLmNybDCCAQUGCisGAQQB
+        1nkCBAIEgfYEgfMA8QB2ALIeBcyLos2KIE6HZvkruYolIGdr2vpw57JJUy3vi5Be
+        AAABcp27Ko8AAAQDAEcwRQIgd6MMtKRRF7G18hpdGog3NINQsuW9vdk7gdqLRDCV
+        /M4CIQCY6NQeRvf5NgmihDWzmpOMPLNmqNFsrdEpgjP6uYY1UAB3AMZSoOxIzrP8
+        qxcJksQ6h0EzCegAZaJiUkAbozYqF8VlAAABcp27KqgAAAQDAEgwRgIhANJ58DxN
+        zyg9Sjenwhl7VMZfdwPPY5k1L/Pwji5S8s41AiEAjrCdS19KqwBBaxagrT/rPsZH
+        PYkBJVCzPLIm0jGeMq8wDQYJKoZIhvcNAQELBQADggEBAMqOLe5vNl4/ThmSFlku
+        WX6iLXmPh6faHRJrVTVO0NNDMI/TTmwBEMYTf2VHEiWlGbe0k7fopkUKvSTGroUT
+        efDMZLL5WsipIG87tfqyOV104e7I/OmJqx7/s9Zq4sild+2iMH8fhkzZqhaPzVn8
+        e526u2i7vo8xPOiHeQsYq7yWf4PPK3wS4xO+0Ov2aG0m2HkeSTkgommoYiGNrMVv
+        xBs5jrz5aMTtocwBPTADl17r5x13nsHhVorlebVHaxRO6clpUxOkhty2bgDP7TWB
+        JRn+L9BHMi+7EfgTJQVIwvjKgsjikfnM2JwLhmCnWFidIL8XW6noCVIaFJgf03Zb
+        vew=
+        -----END CERTIFICATE-----
+```
+
+If you want to use PEM certificates, you can get it and transform it into PEM with:
+
+```sh
+$ openssl s_client -showcerts -connect registry.npmjs.org:443 </dev/null 2>/dev/null | openssl x509 -outform PEM
+-----BEGIN CERTIFICATE-----
+MIIErjCCBFSgAwIBAgIQI6p7Y0Yf7HnyY71zvmeEAzAKBggqhkjOPQQDAjCBkjEL
+MAkGA1UEBhMCR0IxGzAZBgNVBAgTEkdyZWF0ZXIgTWFuY2hlc3RlcjEQMA4GA1UE
+BxMHU2FsZm9yZDEaMBgGA1UEChMRQ09NT0RPIENBIExpbWl0ZWQxODA2BgNVBAMT
+L0NPTU9ETyBFQ0MgRG9tYWluIFZhbGlkYXRpb24gU2VjdXJlIFNlcnZlciBDQSAy
+MB4XDTIwMDUxOTAwMDAwMFoXDTIwMTEyNTIzNTk1OVowJjEkMCIGA1UEAxMbc3Ns
+ODkxNzM4LmNsb3VkZmxhcmVzc2wuY29tMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcD
+QgAEILTZBNtaXXiIlSOn5kmRf65xdN2dLZdP8sm9eEhDirlvKcM2pdTxSQQ8LIhS
++SI0aRXjVaDPniTobjgsjEfu6qOCAvUwggLxMB8GA1UdIwQYMBaAFEAJYWfwvINx
+T94SCCxv1NQrdj2WMB0GA1UdDgQWBBSNu13h63VwbslDXq7fjTD0kqbaADAOBgNV
+HQ8BAf8EBAMCB4AwDAYDVR0TAQH/BAIwADAdBgNVHSUEFjAUBggrBgEFBQcDAQYI
+KwYBBQUHAwIwSQYDVR0gBEIwQDA0BgsrBgEEAbIxAQICBzAlMCMGCCsGAQUFBwIB
+FhdodHRwczovL3NlY3RpZ28uY29tL0NQUzAIBgZngQwBAgEwVgYDVR0fBE8wTTBL
+oEmgR4ZFaHR0cDovL2NybC5jb21vZG9jYTQuY29tL0NPTU9ET0VDQ0RvbWFpblZh
+bGlkYXRpb25TZWN1cmVTZXJ2ZXJDQTIuY3JsMIGIBggrBgEFBQcBAQR8MHowUQYI
+KwYBBQUHMAKGRWh0dHA6Ly9jcnQuY29tb2RvY2E0LmNvbS9DT01PRE9FQ0NEb21h
+aW5WYWxpZGF0aW9uU2VjdXJlU2VydmVyQ0EyLmNydDAlBggrBgEFBQcwAYYZaHR0
+cDovL29jc3AuY29tb2RvY2E0LmNvbTCCAQIGCisGAQQB1nkCBAIEgfMEgfAA7gB1
+AAe3XBvlfWj/8bDGHSMVx7rmV3xXlLdq7rxhOhpp06IcAAABci8TnYIAAAQDAEYw
+RAIgCYYujZHAhbAfFgfAoe5uPZu1o4y1CsP3gcJ1Al6DXoYCIESFxPvIlnZlbLUT
+kzgF18/GHgoR3CrdKhMvPLf+4/GXAHUA5xLysDd+GmL7jskMYYTx6ns3y1YdESZb
+8+DzS/JBVG4AAAFyLxOdsQAABAMARjBEAiARAo67jHvrN3WU+FWJWjYV2ckoBWeZ
+ZCyVLR0EInHggwIgTURNZuUQy+PkK6KAFQ0tCVTN/gF/h6bodBqpc+n/FVwwPgYD
+VR0RBDcwNYIbc3NsODkxNzM4LmNsb3VkZmxhcmVzc2wuY29tggsqLm5wbWpzLm9y
+Z4IJbnBtanMub3JnMAoGCCqGSM49BAMCA0gAMEUCICkFeKYaIIioz9VmbzhK7WgD
+VwwmUUmXvLqEqVYcOdYFAiEAyEiUrpxFk3WQrUSdcFh40OdwHhdeUt1pTUHls7Pl
+ZBg=
+-----END CERTIFICATE-----
+```
+
+Copy the content and paste it as a new entry at `certificates.pemTexts[].content`
 
 ## Run the CLI
 
