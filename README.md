@@ -1,5 +1,7 @@
 # Nexus3CasC: Configuration As Code for Nexus 3
 
+[![Docker Repository on Quay](https://quay.io/repository/vjda/nexus3casc-cli/status "Docker Repository on Quay")](https://quay.io/repository/vjda/nexus3casc-cli)
+
 CLI to inject the configuration stored in YAML(s) into [Sonatype Nexus repository manager 3](https://help.sonatype.com/repomanager3).
 
 ## What it is for
@@ -12,6 +14,9 @@ Nexus3CasC provides you a way to configure a Nexus 3 server to perform the follo
   * realms
 * Setting HTTP(s) proxies
 * Setting a SMTP connection
+* Importing certificates from...
+  * server addresses
+  * PEM format
 * Creating or updating...
   * blob stores to store objects locally or in AWS S3
   * content selectors
@@ -21,14 +26,14 @@ Nexus3CasC provides you a way to configure a Nexus 3 server to perform the follo
   * custom internal users
   * custom roles
   * custom privileges
-  * LDAP connections
+  * LDAP connections (not available yet but in a near future :sunglasses: )
 * Deleting any unknown configuration for items like...
   * blob stores
   * content selectors
   * clean up policies
   * routing rules
   * repositories
-  * LDAP connections (not available yet but in a near future :sunglasses: )
+  * LDAP connections (not available yet)
   * local users (_anonymous_ and _admin_ users will be ignored)
   * custom roles (built-in roles will be ignored)
   * custom privileges (built-in privileges will be ignored)
@@ -47,7 +52,7 @@ As said before, you can use YAML files to define your custom configuration. You 
 
 #### Default values
 
-There is a YAML with default values at [config/nexus_defaults.yaml](config/nexus_defaults.yaml). It defines a set of keys that are used in case of they are not defined in your YAML file.
+There is a YAML with default values at [resources/config/nexus_defaults.yaml](resources/config/nexus_defaults.yaml). It defines a set of keys that are used in case of they are not defined in your YAML file.
 
 ```yaml
 # config/nexus_defaults.yaml
@@ -95,7 +100,7 @@ smtpConnection:
   enabled: false
 
 # Create new connections to LDAP servers
-ldapConnections: []
+# ldapConnections: [] # Not yet available
 
 # Create new local and LDAP users
 customUsers:
@@ -152,7 +157,7 @@ realms:
 
 The list of realms could be different depending of the Nexus 3 version you use. If you include a non-existent realm it will be ignored.
 
-> Be carefull disabling some realms such as _Local Authenticating Realm_ and _Local Authorizing Realm_. If one of them is disabled, you will not be able to login as an internal user!
+> Be careful disabling some realms such as _Local Authenticating Realm_ and _Local Authorizing Realm_. If one of them is disabled, you will not be able to login as an internal user!
 
 #### `httpClient`
 
@@ -191,18 +196,19 @@ A blob store is a location where to store the _blob objects_ for binary assets.
 
 ```yaml
 blobStores:
-- name: default             # required
-  type: file                # optional (defaults: file)
-  path: default             # optional: path can be either a relative or absolute path (defaults: `name` value)
-- name: local
-- name: remote
-  type: file
-  path: /tmp/custom/remote
-  type: s3                                                      # Use `type: s3` to store blobs in AWS S3 bucket
-  config:                                                       # required if`type: s3`
-    bucket: s3-blobstore                                        # required if`type: s3`
-    accessKeyId: AKIAIOSFODNN7EXAMPLE                           # required if`type: s3`
-    secretAccessKey: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY   # required if`type: s3`
+  - name: default             # required
+    type: file                # optional (defaults: file)
+    path: default             # optional: path can be either a relative or absolute path (defaults: `name` value)
+  - name: local
+  - name: remote
+    type: file
+    path: /tmp/custom/remote
+  - name: s3-blobstore
+    type: s3                                                      # Use `type: s3` to store blobs in AWS S3 bucket
+    config:                                                       # required if`type: s3`
+      bucket: s3-blobstore                                        # required if`type: s3`
+      accessKeyId: AKIAIOSFODNN7EXAMPLE                           # required if`type: s3`
+      secretAccessKey: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY   # required if`type: s3`
 ```
 
 #### `cleanupPolicies`
@@ -211,22 +217,22 @@ The cleanup feature is a way of removing components from your repositories using
 
 ```yaml
 cleanupPolicies:
-- name: purge-snapshots                               # required
-  format: maven2                                      # required
-  notes: "Delete maven snapshots downloaded > 7 days" # optional
-  mode: delete                                        # optional (defaults: delete)
-  criteria:                                           # required
-    lastBlobUpdated: 30                               # optional: must be a number > 0
-    lastDownloaded: 7                                 # optional: must be a number > 0
-    preRelease: PRERELEASES                           # optional: RELEASES or PRERELEASES
-    regexKey: (org|com)/.*                            # optional: must be a regex pattern
-- name: purge-helm-artifacts-with-one-year
-  format: helm
-  notes: Delete helm artifacts older than 1 year
-  mode: delete
-  criteria:
-    lastBlobUpdated: 365
-    regexKey: "(org|com)/company/.*"
+  - name: purge-snapshots                               # required
+    format: maven2                                      # required
+    notes: "Delete maven snapshots downloaded > 7 days" # optional
+    mode: delete                                        # optional (defaults: delete)
+    criteria:                                           # required
+      lastBlobUpdated: 30                               # optional: must be a number > 0
+      lastDownloaded: 7                                 # optional: must be a number > 0
+      preRelease: PRERELEASES                           # optional: RELEASES or PRERELEASES
+      regexKey: (org|com)/.*                            # optional: must be a regex pattern
+  - name: purge-helm-artifacts-with-one-year
+    format: helm
+    notes: Delete helm artifacts older than 1 year
+    mode: delete
+    criteria:
+      lastBlobUpdated: 365
+      regexKey: "(org|com)/company/.*"
 ```
 
 #### `routingRules`
@@ -235,18 +241,18 @@ Routing rules are used to prevent or allow it from making certain requests to up
 
 ```yaml
 routingRules:
-- name: block-com-company-department                # required
-  description: Blocks artifacts with specific path  # optional
-  mode: BLOCK                                       # required: ALLOW or BLOCK
-  matchers:                                         # required
-  - ^com/company/department/.*                      # required: at least 1 matcher, must be a regex
-- name: allow-some
-  mode: allow
-  description: Allow artifacts from specific paths
-  matchers:
-  - company/department2/.*
-  - .*/department1/.*
-  - ^com/.*/engineering/.*
+  - name: block-com-company-department                # required
+    description: Blocks artifacts with specific path  # optional
+    mode: BLOCK                                       # required: ALLOW or BLOCK
+    matchers:                                         # required
+    - ^com/company/department/.*                      # required: at least 1 matcher, must be a regex
+  - name: allow-some
+    mode: allow
+    description: Allow artifacts from specific paths
+    matchers:
+    - company/department2/.*
+    - .*/department1/.*
+    - ^com/.*/engineering/.*
 ```
 
 #### `contentSelectors`
@@ -255,14 +261,14 @@ Content selectors provide a way to select specific content from all of your cont
 
 ```yaml
 contentSelectors:
-- name: helm-all-selector                       # required
-  format: csel                                  # optional (defaults: csel)
-  description: Search for all helm artifacts    # optional
-  expression: format == "helm"                  # required
-- name: raw-selector
-  format: csel
-  description: Search for raw artifacts in specific path
-  expression: format == "maven2" and path =^ "/org/sonatype/nexus"
+  - name: helm-all-selector                       # required
+    format: csel                                  # optional (defaults: csel)
+    description: Search for all helm artifacts    # optional
+    expression: format == "helm"                  # required
+  - name: raw-selector
+    format: csel
+    description: Search for raw artifacts in specific path
+    expression: format == "maven2" and path =^ "/org/sonatype/nexus"
 ```
 
 #### `repositories`
@@ -272,102 +278,102 @@ Create repositories to store artifacts for different formats and sources.
 ```yaml
 repositories:
 
-# Hosted repositories
-- name: helm-releases                                 # required
-  format: helm                                        # required: any type which supports hosted repositories
-  type: hosted                                        # required: must be "hosted"
-  online: true                                        # optional (defaults: false)
-  storage:                                            # required
-    blobStoreName: local                              # required
-    strictContentTypeValidation: true                 # required: true or false
-    writePolicy: ALLOW_ONCE                           # required: ALLOW, ALLOW_ONCE or DENY
-  cleanup:                                            # optional
-    policyNames:
-    - remove-old-helm-artifacts
-  apt:                                                # required: if `format: apt`
-    distribution: bionic                              # required
-  aptSigning:                                         # required: if `format: apt`
-    keypair: 515F58C16D58E682E91ACEFF17B5C97F9A816AD7 # required
-    passphrase: keep my account safe                  # required
-  docker:                                             # required: if `format: docker`
-    v1Enabled: false                                  # optional (defaults: false)
-    forceBasicAuth: true                              # optional (defaults: false)
-    httpPort: 5001                                    # optional
-    httpsPort: 5000                                   # optional
-  maven:                                              # required: if `format: maven2`
-    versionPolicy: SNAPSHOT                           # required: RELEASE, SNAPSHOT or MIXED
-    layoutPolicy: PERMISSIVE                          # required: STRICT or PERMISSIVE
-  yum:                                                # required: if `format: yum`
-    repodataDepth: 5                                  # required
-    deployPolicy: STRICT                              # required
+  # Hosted repositories
+  - name: helm-releases                                 # required
+    format: helm                                        # required: any type which supports hosted repositories
+    type: hosted                                        # required: must be "hosted"
+    online: true                                        # optional (defaults: false)
+    storage:                                            # required
+      blobStoreName: local                              # required
+      strictContentTypeValidation: true                 # required: true or false
+      writePolicy: ALLOW_ONCE                           # required: ALLOW, ALLOW_ONCE or DENY
+    cleanup:                                            # optional
+      policyNames:
+      - remove-old-helm-artifacts
+    apt:                                                # required: if `format: apt`
+      distribution: bionic                              # required
+    aptSigning:                                         # required: if `format: apt`
+      keypair: 515F58C16D58E682E91ACEFF17B5C97F9A816AD7 # required
+      passphrase: keep my account safe                  # required
+    docker:                                             # required: if `format: docker`
+      v1Enabled: false                                  # optional (defaults: false)
+      forceBasicAuth: true                              # optional (defaults: false)
+      httpPort: 5001                                    # optional
+      httpsPort: 5000                                   # optional
+    maven:                                              # required: if `format: maven2`
+      versionPolicy: SNAPSHOT                           # required: RELEASE, SNAPSHOT or MIXED
+      layoutPolicy: PERMISSIVE                          # required: STRICT or PERMISSIVE
+    yum:                                                # required: if `format: yum`
+      repodataDepth: 5                                  # required
+      deployPolicy: STRICT                              # required
 
-# Remote repositories
-- name: yum-proxy                               # required
-  format: yum                                   # required: any type which supports proxy repositories
-  type: proxy                                   # required: must be "proxy"
-  online: true                                  # optional (defaults: false)
-  storage:                                      # required
-    blobStoreName: remote                       # required
-    strictContentTypeValidation: true           # required
-  proxy:                                        # required
-    remoteUrl: http://mirror.centos.org/centos  # required
-    contentMaxAge: 1440                         # optional (defaults: 1440)
-    metadataMaxAge: 1440                        # optional (defaults: 1440)
-  negativeCache:                                # optional
-    enabled: true                               # required
-    timeToLive: 1440                            # required
-  cleanup:                                      # optional
-    policyNames:
-    - remove-old-packages
-  routingRuleName: allow-some                   # optional
-  httpClient:                                   # required
-    blocked: false                              # optional (defaults: false)
-    autoBlock: true                             # optional (defaults: false)
-    connection:                                 # optional (defaults: {})
-      retries:                                  # optional
-      userAgentSuffix:                          # optional
-      timeout: 30                               # optional
-      enableCircularRedirects: false            # optional (defaults: false)
-      enableCookies: false                      # optional (defaults: false)
-      useTrustStore: true                       # optional (defaults: false)
-    authentication:                             # optional (defaults: {})
-      username: proxyuser                       # required: if authentication is set
-      password: pr0xyp@ss                       # required: if authentication is set
-      ntlmHost: ntlm.acme.com                   # optional
-      ntlmDomain: acme.com                      # optional
-  bower:                                        # required: if `format: bower`
-    rewritePackageUrls: true                    # required
-  nugetProxy:                                   # required: if `format: nuget`
-    queryCacheItemMaxAge: 1440                  # required
-  docker:                                       # required: if `format: docker`
-    v1Enabled: false                            # optional (defaults: false)
-    forceBasicAuth: true                        # optional (defaults: false)
-    httpPort: 5001                              # optional
-    httpsPort: 5000                             # optional
-  dockerProxy:                                  # required: if `format: docker`
-    indexType: CUSTOM                           # required: HUB, REGISTRY or CUSTOM
-    indexUrl: https://index.docker.io/          # required: if `dockerProxy.indextype: CUSTOM`
-    foreignLayerUrlWhitelist:                   # optional: must be a regex
-    - https?://go.microsoft.com/.*
-    - https?://.*\.azurecr\.io/.*
+  # Remote repositories
+  - name: yum-proxy                               # required
+    format: yum                                   # required: any type which supports proxy repositories
+    type: proxy                                   # required: must be "proxy"
+    online: true                                  # optional (defaults: false)
+    storage:                                      # required
+      blobStoreName: remote                       # required
+      strictContentTypeValidation: true           # required
+    proxy:                                        # required
+      remoteUrl: http://mirror.centos.org/centos  # required
+      contentMaxAge: 1440                         # optional (defaults: 1440)
+      metadataMaxAge: 1440                        # optional (defaults: 1440)
+    negativeCache:                                # optional
+      enabled: true                               # required
+      timeToLive: 1440                            # required
+    cleanup:                                      # optional
+      policyNames:
+      - remove-old-packages
+    routingRuleName: allow-some                   # optional
+    httpClient:                                   # required
+      blocked: false                              # optional (defaults: false)
+      autoBlock: true                             # optional (defaults: false)
+      connection:                                 # optional (defaults: {})
+        retries:                                  # optional
+        userAgentSuffix:                          # optional
+        timeout: 30                               # optional
+        enableCircularRedirects: false            # optional (defaults: false)
+        enableCookies: false                      # optional (defaults: false)
+        useTrustStore: true                       # optional (defaults: false)
+      authentication:                             # optional (defaults: {})
+        username: proxyuser                       # required: if authentication is set
+        password: pr0xyp@ss                       # required: if authentication is set
+        ntlmHost: ntlm.acme.com                   # optional
+        ntlmDomain: acme.com                      # optional
+    bower:                                        # required: if `format: bower`
+      rewritePackageUrls: true                    # required
+    nugetProxy:                                   # required: if `format: nuget`
+      queryCacheItemMaxAge: 1440                  # required
+    docker:                                       # required: if `format: docker`
+      v1Enabled: false                            # optional (defaults: false)
+      forceBasicAuth: true                        # optional (defaults: false)
+      httpPort: 5001                              # optional
+      httpsPort: 5000                             # optional
+    dockerProxy:                                  # required: if `format: docker`
+      indexType: CUSTOM                           # required: HUB, REGISTRY or CUSTOM
+      indexUrl: https://index.docker.io/          # required: if `dockerProxy.indextype: CUSTOM`
+      foreignLayerUrlWhitelist:                   # optional: must be a regex
+      - https?://go.microsoft.com/.*
+      - https?://.*\.azurecr\.io/.*
 
-# Group repositories
-- name: npm-group                      # required
-  format: npm                          # required: any type which supports group repositories
-  type: group                          # required: must be "group"
-  online: true                         # optional (defaults: false)
-  storage:                             # required
-    blobStoreName: group               # required
-    strictContentTypeValidation: true  # required: true or false
-  group:                               # required
-    memberNames:                       # required: at least 1 repository for the same type
-    - npm-hosted
-    - npm-proxy
-  docker:                              # required: if `type: docker`
-    v1Enabled: false                   # optional (defaults: false)
-    forceBasicAuth: true               # optional (defaults: false)
-    httpPort: 5001                     # optional: must be a valid port
-    httpsPort: 5000                    # optional: must be a valid port
+  # Group repositories
+  - name: npm-group                      # required
+    format: npm                          # required: any type which supports group repositories
+    type: group                          # required: must be "group"
+    online: true                         # optional (defaults: false)
+    storage:                             # required
+      blobStoreName: group               # required
+      strictContentTypeValidation: true  # required: true or false
+    group:                               # required
+      memberNames:                       # required: at least 1 repository for the same type
+      - npm-hosted
+      - npm-proxy
+    docker:                              # required: if `type: docker`
+      v1Enabled: false                   # optional (defaults: false)
+      forceBasicAuth: true               # optional (defaults: false)
+      httpPort: 5001                     # optional: must be a valid port
+      httpsPort: 5000                    # optional: must be a valid port
 ```
 
 #### `smtpConnection`
@@ -401,29 +407,29 @@ Add additional users to log in Nexus 3.
 ```yaml
 customUsers:
   local:
-  - userId: jamesbrown                # required
-    password: Th15_1s_Aw3s0m3         # required: it should be provided unless being anonymous or admin
-    firstName: James                  # required
-    lastName: Brown                   # required
-    emailAddress: jbrown@example.com  # required
-    status: disabled                  # optional: active, locked, disabled or changepassword (defaults: disabled)
-    roles:                            # required
-    - my-admin-role
-  - userId: anonymous
-    password:
-    firstName: Anonymous
-    lastName: User
-    emailAddress: anonymous@example.org
-    status: active
-    roles:
-    - nx-anonymous
-  - userId: admin
-    firstName: Administrator
-    lastName: User
-    emailAddress: admin@example.org
-    status: active
-    roles:
-    - nx-admin
+    - userId: jamesbrown                # required
+      password: Th15_1s_Aw3s0m3         # required: it should be provided unless being anonymous or admin
+      firstName: James                  # required
+      lastName: Brown                   # required
+      emailAddress: jbrown@example.com  # required
+      status: disabled                  # optional: active, locked, disabled or changepassword (defaults: disabled)
+      roles:                            # required
+        - my-admin-role
+    - userId: anonymous
+      password:
+      firstName: Anonymous
+      lastName: User
+      emailAddress: anonymous@example.org
+      status: active
+      roles:
+        - nx-anonymous
+    - userId: admin
+      firstName: Administrator
+      lastName: User
+      emailAddress: admin@example.org
+      status: active
+      roles:
+        - nx-admin
   ```
 
 #### `customRoles`
@@ -438,15 +444,15 @@ customRoles:
     description: Custom Administrator Role  # optional
     privileges: []                          # optional
     roles:                                  # optional
-    - nx-admin
+      - nx-admin
   - id: custom-maven-developer-role
     name: Maven Developer
     source: default
     description: Maven Developer Role
     privileges:
-    - nx-repository-view-maven2-*-browse
-    - nx-repository-view-maven2-*-add
-    - nx-repository-view-maven2-*-read
+      - nx-repository-view-maven2-*-browse
+      - nx-repository-view-maven2-*-add
+      - nx-repository-view-maven2-*-read
     roles: []
   ```
 
@@ -457,60 +463,153 @@ Privileges control access to specific functionality of the repository manager an
 ```yaml
 customPrivileges:
 
-# These are privileges that use patterns to group other privileges
-- type: wildcard                              # required: wildcard, application, repository-admin, repository-view, repository-content-selector or script
-  name: my-wildcard-all                       # required
-  description: All permissions                # optional
-  pattern: "nexus:*"                          # required: if `type: wildcard`
+  # These are privileges that use patterns to group other privileges
+  - type: wildcard                              # required: wildcard, application, repository-admin, repository-view, repository-content-selector or script
+    name: my-wildcard-all                       # required
+    description: All permissions                # optional
+    pattern: "nexus:*"                          # required: if `type: wildcard`
 
-# These are privileges related to a specific domain in the repository manager
-- type: application
-  name: my-app-analytics-all
-  description: All permissions for Analytics
-  actions:                                    # required: if not `type: wildcard`
-  - ALL                                       # required: ADD, BROWSE, CREATE, DELETE, EDIT, READ, UPDATE OR ALL
-  domain: analytics                           # required
+  # These are privileges related to a specific domain in the repository manager
+  - type: application
+    name: my-app-analytics-all
+    description: All permissions for Analytics
+    actions:                                    # required: if not `type: wildcard`
+      - ALL                                     # required: ADD, BROWSE, CREATE, DELETE, EDIT, READ, UPDATE OR ALL
+    domain: analytics                           # required
 
-# These are privileges related to the administration and configuration of a specific repository
-- type: repository-admin
-  name: my-maven-repository-admin
-  description: All privileges for all maven repositories
-  actions:
-  - ALL
-  format: maven2                              # required: if `type: repository-admin`
-  repository: "*"                             # required: can be any repository name or "*" for all repositories
+  # These are privileges related to the administration and configuration of a specific repository
+  - type: repository-admin
+    name: my-maven-repository-admin
+    description: All privileges for all maven repositories
+    actions:
+      - ALL
+    format: maven2                              # required: if `type: repository-admin`
+    repository: "*"                             # required: can be any repository name or "*" for all repositories
 
-# These are privileges controlling access to the content of a specific repository
-- type: repository-view
-  name: my-nuget-repository-view-add
-  description: Add permission for all nuget repository views
-  actions:
-  - BROWSE
-  format: nuget
-  repository: nuget-hosted
+  # These are privileges controlling access to the content of a specific repository
+  - type: repository-view
+    name: my-nuget-repository-view-add
+    description: Add permission for all nuget repository views
+    actions:
+      - BROWSE
+    format: nuget
+    repository: nuget-hosted
 
-# These are privileges attributed to filtered content within a format, evaluated against a content selector
-- type: repository-content-selector
-  name: my-content-selectors-all
-  description: Add permission for content selector for raw repositories  
-  actions:
-  - BROWSE
-  - ADD
-  - CREATE
-  - EDIT
-  - UPDATE
-  repository: "*-raw"                         # required: *-raw selects all repositories names which end with -raw
-  contentSelector: raw-selector               # required
+  # These are privileges attributed to filtered content within a format, evaluated against a content selector
+  - type: repository-content-selector
+    name: my-content-selectors-all
+    description: Add permission for content selector for raw repositories  
+    actions:
+      - BROWSE
+      - ADD
+      - CREATE
+      - EDIT
+      - UPDATE
+    repository: "*-raw"                         # required: *-raw selects all repositories names which end with -raw
+    contentSelector: raw-selector               # required
 
-# These are privileges related to the execution and management of scripts
-- type: script
-  name: my-script-*-add
-  description: Add permission for Scripts
-  actions:
-  - ADD
-  - READ
-  scriptName: "*"                             # required: can be a script name or "*" for all scripts
+  # These are privileges related to the execution and management of scripts
+  - type: script
+    name: my-script-*-add
+    description: Add permission for Scripts
+    actions:
+      - ADD
+      - READ
+    scriptName: "*"                             # required: can be a script name or "*" for all scripts
 ```
+
+#### `certificates`
+
+Add SSL certificates of remote proxy repositories to marked as trusted.
+
+```yaml
+certificates:
+  servers:                              # optional: all below formats are accepted
+    - cdn.cocoapods.org                 # host
+    - conan.bintray.com:443             # host + port
+    - https://cran.r-project.org        # protocol + host
+    - https://download.eclipse.org:443  # protocol + host + port
+  pemTexts:                             # optional
+    - content: |-                       # must be `content: <PEM_CERTIFICATE_CONTENT>`
+        -----BEGIN CERTIFICATE-----
+        MIIHTjCCBjagAwIBAgIQa5LMK51h2Z4IAAAAAEZzsTANBgkqhkiG9w0BAQsFADBC
+        MQswCQYDVQQGEwJVUzEeMBwGA1UEChMVR29vZ2xlIFRydXN0IFNlcnZpY2VzMRMw
+        EQYDVQQDEwpHVFMgQ0EgMU8xMB4XDTIwMDYxMDA5MTYyNVoXDTIwMDkwMjA5MTYy
+        NVowcjELMAkGA1UEBhMCVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcT
+        DU1vdW50YWluIFZpZXcxEzARBgNVBAoTCkdvb2dsZSBMTEMxITAfBgNVBAMMGCou
+        c3RvcmFnZS5nb29nbGVhcGlzLmNvbTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCC
+        AQoCggEBALEeUhptbYTwwjAZbI+acwYyUgNgc6dejR6Lq58rh36KKT9bEnvp5GXa
+        /veW/7HLEd6yhe46biQKELTAwefXKA885u+wQeMem7PrNyEVTgff+wjCnEz/QLBs
+        qu4UzvBPcMQDleOP8kTsNBQNN/lUArRF2ESwTIUzkw1bgkvud4hbQTHIdLELjkCl
+        L5ufb1AaEF8dBT2DijOwLy3Fm+XlNg6ztCj7K+QAAUqhIqN2kd+mJ3GxguBgCH3Q
+        SbRYywgMoVH3wQz5mlWIs4jQckbgmog5L3m+l4zk/eJpD5egGiOYzSj8IUb/zdjN
+        lYZMgkF8w5Wz/LAFPpXtraHE83oX5MMCAwEAAaOCBA4wggQKMA4GA1UdDwEB/wQE
+        AwIFoDATBgNVHSUEDDAKBggrBgEFBQcDATAMBgNVHRMBAf8EAjAAMB0GA1UdDgQW
+        BBQUDn/0bKh4/6eM+K0VeuTeq8bEVzAfBgNVHSMEGDAWgBSY0fhuEOvPm+xgnxiQ
+        G6DrfQn9KzBoBggrBgEFBQcBAQRcMFowKwYIKwYBBQUHMAGGH2h0dHA6Ly9vY3Nw
+        LnBraS5nb29nL2d0czFvMWNvcmUwKwYIKwYBBQUHMAKGH2h0dHA6Ly9wa2kuZ29v
+        Zy9nc3IyL0dUUzFPMS5jcnQwggHIBgNVHREEggG/MIIBu4IYKi5zdG9yYWdlLmdv
+        b2dsZWFwaXMuY29tgiQqLmFwcHNwb3QuY29tLnN0b3JhZ2UuZ29vZ2xlYXBpcy5j
+        b22CIiouY29tbW9uZGF0YXN0b3JhZ2UuZ29vZ2xlYXBpcy5jb22CKSouY29udGVu
+        dC1zdG9yYWdlLWRvd25sb2FkLmdvb2dsZWFwaXMuY29tgicqLmNvbnRlbnQtc3Rv
+        cmFnZS11cGxvYWQuZ29vZ2xlYXBpcy5jb22CICouY29udGVudC1zdG9yYWdlLmdv
+        b2dsZWFwaXMuY29tghAqLmdvb2dsZWFwaXMuY29tgiEqLnN0b3JhZ2UtZG93bmxv
+        YWQuZ29vZ2xlYXBpcy5jb22CHyouc3RvcmFnZS11cGxvYWQuZ29vZ2xlYXBpcy5j
+        b22CHyouc3RvcmFnZS5zZWxlY3QuZ29vZ2xlYXBpcy5jb22CIGNvbW1vbmRhdGFz
+        dG9yYWdlLmdvb2dsZWFwaXMuY29tghZzdG9yYWdlLmdvb2dsZWFwaXMuY29tgh1z
+        dG9yYWdlLnNlbGVjdC5nb29nbGVhcGlzLmNvbYIPdW5maWx0ZXJlZC5uZXdzMCEG
+        A1UdIAQaMBgwCAYGZ4EMAQICMAwGCisGAQQB1nkCBQMwMwYDVR0fBCwwKjAooCag
+        JIYiaHR0cDovL2NybC5wa2kuZ29vZy9HVFMxTzFjb3JlLmNybDCCAQUGCisGAQQB
+        1nkCBAIEgfYEgfMA8QB2ALIeBcyLos2KIE6HZvkruYolIGdr2vpw57JJUy3vi5Be
+        AAABcp27Ko8AAAQDAEcwRQIgd6MMtKRRF7G18hpdGog3NINQsuW9vdk7gdqLRDCV
+        /M4CIQCY6NQeRvf5NgmihDWzmpOMPLNmqNFsrdEpgjP6uYY1UAB3AMZSoOxIzrP8
+        qxcJksQ6h0EzCegAZaJiUkAbozYqF8VlAAABcp27KqgAAAQDAEgwRgIhANJ58DxN
+        zyg9Sjenwhl7VMZfdwPPY5k1L/Pwji5S8s41AiEAjrCdS19KqwBBaxagrT/rPsZH
+        PYkBJVCzPLIm0jGeMq8wDQYJKoZIhvcNAQELBQADggEBAMqOLe5vNl4/ThmSFlku
+        WX6iLXmPh6faHRJrVTVO0NNDMI/TTmwBEMYTf2VHEiWlGbe0k7fopkUKvSTGroUT
+        efDMZLL5WsipIG87tfqyOV104e7I/OmJqx7/s9Zq4sild+2iMH8fhkzZqhaPzVn8
+        e526u2i7vo8xPOiHeQsYq7yWf4PPK3wS4xO+0Ov2aG0m2HkeSTkgommoYiGNrMVv
+        xBs5jrz5aMTtocwBPTADl17r5x13nsHhVorlebVHaxRO6clpUxOkhty2bgDP7TWB
+        JRn+L9BHMi+7EfgTJQVIwvjKgsjikfnM2JwLhmCnWFidIL8XW6noCVIaFJgf03Zb
+        vew=
+        -----END CERTIFICATE-----
+```
+
+If you want to use PEM certificates, you can get it and transform it into PEM with:
+
+```sh
+$ openssl s_client -showcerts -connect registry.npmjs.org:443 </dev/null 2>/dev/null | openssl x509 -outform PEM
+-----BEGIN CERTIFICATE-----
+MIIErjCCBFSgAwIBAgIQI6p7Y0Yf7HnyY71zvmeEAzAKBggqhkjOPQQDAjCBkjEL
+MAkGA1UEBhMCR0IxGzAZBgNVBAgTEkdyZWF0ZXIgTWFuY2hlc3RlcjEQMA4GA1UE
+BxMHU2FsZm9yZDEaMBgGA1UEChMRQ09NT0RPIENBIExpbWl0ZWQxODA2BgNVBAMT
+L0NPTU9ETyBFQ0MgRG9tYWluIFZhbGlkYXRpb24gU2VjdXJlIFNlcnZlciBDQSAy
+MB4XDTIwMDUxOTAwMDAwMFoXDTIwMTEyNTIzNTk1OVowJjEkMCIGA1UEAxMbc3Ns
+ODkxNzM4LmNsb3VkZmxhcmVzc2wuY29tMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcD
+QgAEILTZBNtaXXiIlSOn5kmRf65xdN2dLZdP8sm9eEhDirlvKcM2pdTxSQQ8LIhS
++SI0aRXjVaDPniTobjgsjEfu6qOCAvUwggLxMB8GA1UdIwQYMBaAFEAJYWfwvINx
+T94SCCxv1NQrdj2WMB0GA1UdDgQWBBSNu13h63VwbslDXq7fjTD0kqbaADAOBgNV
+HQ8BAf8EBAMCB4AwDAYDVR0TAQH/BAIwADAdBgNVHSUEFjAUBggrBgEFBQcDAQYI
+KwYBBQUHAwIwSQYDVR0gBEIwQDA0BgsrBgEEAbIxAQICBzAlMCMGCCsGAQUFBwIB
+FhdodHRwczovL3NlY3RpZ28uY29tL0NQUzAIBgZngQwBAgEwVgYDVR0fBE8wTTBL
+oEmgR4ZFaHR0cDovL2NybC5jb21vZG9jYTQuY29tL0NPTU9ET0VDQ0RvbWFpblZh
+bGlkYXRpb25TZWN1cmVTZXJ2ZXJDQTIuY3JsMIGIBggrBgEFBQcBAQR8MHowUQYI
+KwYBBQUHMAKGRWh0dHA6Ly9jcnQuY29tb2RvY2E0LmNvbS9DT01PRE9FQ0NEb21h
+aW5WYWxpZGF0aW9uU2VjdXJlU2VydmVyQ0EyLmNydDAlBggrBgEFBQcwAYYZaHR0
+cDovL29jc3AuY29tb2RvY2E0LmNvbTCCAQIGCisGAQQB1nkCBAIEgfMEgfAA7gB1
+AAe3XBvlfWj/8bDGHSMVx7rmV3xXlLdq7rxhOhpp06IcAAABci8TnYIAAAQDAEYw
+RAIgCYYujZHAhbAfFgfAoe5uPZu1o4y1CsP3gcJ1Al6DXoYCIESFxPvIlnZlbLUT
+kzgF18/GHgoR3CrdKhMvPLf+4/GXAHUA5xLysDd+GmL7jskMYYTx6ns3y1YdESZb
+8+DzS/JBVG4AAAFyLxOdsQAABAMARjBEAiARAo67jHvrN3WU+FWJWjYV2ckoBWeZ
+ZCyVLR0EInHggwIgTURNZuUQy+PkK6KAFQ0tCVTN/gF/h6bodBqpc+n/FVwwPgYD
+VR0RBDcwNYIbc3NsODkxNzM4LmNsb3VkZmxhcmVzc2wuY29tggsqLm5wbWpzLm9y
+Z4IJbnBtanMub3JnMAoGCCqGSM49BAMCA0gAMEUCICkFeKYaIIioz9VmbzhK7WgD
+VwwmUUmXvLqEqVYcOdYFAiEAyEiUrpxFk3WQrUSdcFh40OdwHhdeUt1pTUHls7Pl
+ZBg=
+-----END CERTIFICATE-----
+```
+
+Copy the content and paste it as a new entry at `certificates.pemTexts[].content`
 
 ## Run the CLI
 
@@ -568,16 +667,16 @@ Options:
 
 ## Run the CLI as docker container
 
-Nexus3CasC is published on [Dockerhub](https://hub.docker.com/r/vjda/nexus3casc-cli). You can use it as docker image executing the following command:
+Nexus3CasC is published on [quay.io](https://quay.io/repository/vjda/nexus3casc-cli). You can use it as docker image executing the following command:
 
 ```sh
-docker run -v /path/to/directory:/tmp/config vjda/nexus3casc-cli:0.1.0 from-path --config /tmp/config/nexus.yaml
+docker run -v /path/to/directory:/tmp/config quay.io/vjda/nexus3casc-cli:latest from-path --config /tmp/config/nexus.yaml
 ```
 
 Or, you can set `NEXUS3_CASC_CONFIG_PATH` instead of passing `--config /tmp/config/nexus.yaml`
 
 ```sh
-docker run -v /path/to/directory:/tmp/config -e NEXUS3_CASC_CONFIG_PATH=/tmp/config/nexus.yaml vjda/nexus3casc-cli:0.1.0 from-path
+docker run -v /path/to/directory:/tmp/config -e NEXUS3_CASC_CONFIG_PATH=/tmp/config/nexus.yaml quay.io/vjda/nexus3casc-cli:latest from-path
 ```
 
 > You must use `-v` to mount a volume so that the YAML file is available inside the docker container. Otherwise, it cannot access to it and the command will fail.

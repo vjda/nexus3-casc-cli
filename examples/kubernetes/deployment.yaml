@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: nexus3casc
-        image: vjda/nexus3casc-cli:0.1.0
+        image: quay.io/vjda/nexus3casc-cli:latest
         args:
           - from-k8s
           - --namespace=nexus

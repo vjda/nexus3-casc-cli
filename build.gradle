@@ -38,6 +38,8 @@ dependencies {
   compile group: 'org.sonatype.nexus.plugins', name: 'nexus-repository-cocoapods', version: versions.nxrm3
   compile group: 'org.sonatype.nexus.plugins', name: 'nexus-repository-pypi', version: versions.nxrm3
   compile group: 'org.sonatype.nexus.plugins', name: 'nexus-repository-npm', version: versions.nxrm3
+  compile group: 'org.sonatype.nexus.plugins', name: 'nexus-ssl-plugin', version: versions.nxrm3
+
 
   compile group: 'org.sonatype.nexus.plugins', name: 'nexus-repository-conan', version: '1.0.2'
   compile group: 'org.sonatype.nexus.plugins', name: 'nexus-blobstore-google-cloud', version: '0.11.0'
