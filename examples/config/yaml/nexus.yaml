@@ -15,6 +15,7 @@ nexus:
     customLocalUsers: true
     customRoles: true
     customPrivileges: true
+    tasks: true
 
 realms:
   - name: Conan Bearer Token Realm
@@ -798,17 +799,17 @@ customUsers:
       firstName: Anonymous
       lastName: User
       emailAddress: anonymous@example.org
-      source: default
-      status: active
+
+      status: ACTIVE
       roles:
         - nx-anonymous
-      # externalRoles: []
+
     - userId: admin
       firstName: Administrator
       lastName: User
       emailAddress: admin@example.org
-      source: default
-      status: active
+
+      status: ACTIVE
       roles:
         - nx-admin
     - userId: james
@@ -816,8 +817,8 @@ customUsers:
       firstName: James
       lastName: Brown
       emailAddress: jbrown@example.com
-      source: default
-      status: active
+
+      status: ACTIVE
       roles:
         - my-admin-role
   ldap: []
@@ -914,8 +915,8 @@ certificates:
     - rubygems.org
     - storage.googleapis.com
     - www.nuget.org
-  pemTexts:
-    - content: |-
+  certs:
+    - pem: |-
         -----BEGIN CERTIFICATE-----
         MIIHTjCCBjagAwIBAgIQa5LMK51h2Z4IAAAAAEZzsTANBgkqhkiG9w0BAQsFADBC
         MQswCQYDVQQGEwJVUzEeMBwGA1UEChMVR29vZ2xlIFRydXN0IFNlcnZpY2VzMRMw
@@ -958,3 +959,209 @@ certificates:
         JRn+L9BHMi+7EfgTJQVIwvjKgsjikfnM2JwLhmCnWFidIL8XW6noCVIaFJgf03Zb
         vew=
         -----END CERTIFICATE-----
+
+tasks:
+  - name: Rebuild Yum repository metadata
+    typeId: repository.yum.rebuild.metadata
+    enabled: true
+    alertEmail: mymail@company.com
+    notificationCondition: FAILURE
+    properties:
+      yumMetadataCaching: true
+      repositoryName: yum-hosted
+    schedule:
+      type: NOW
+  - name: Task log cleanup
+    typeId: tasklog.cleanup
+    enabled: true
+    alertEmail: mymail@company.com
+    notificationCondition: FAILURE
+    properties: {}
+    schedule:
+      type: ONCE
+      startDateTime: '2021-03-04T01:15:24'
+  - name: Delete unused SNAPSHOTS
+    typeId: repository.maven.purge-unused-snapshots
+    enabled: false
+    alertEmail: mymail@company.com
+    notificationCondition: FAILURE
+    properties:
+      repositoryName: "*"
+      lastUsed: 30
+    schedule:
+      type: HOURLY
+      startDateTime: '2020-10-04T08:00:00'
+  - name: Delete unused manifests and images
+    typeId: repository.docker.gc
+    enabled: false
+    alertEmail: mymail@company.com
+    notificationCondition: FAILURE
+    properties:
+      repositoryName: "*"
+    schedule:
+      type: DAILY
+      startDateTime: '2020-10-04T08:00:00'
+  - name: Delete SNAPSHOTS
+    typeId: repository.maven.remove-snapshots
+    enabled: true
+    alertEmail: mymail@company.com
+    notificationCondition: FAILURE
+    properties:
+      repositoryName: maven-central
+      minimumRetained: 3
+      snapshotRetentionDays: 30
+      gracePeriodInDays: 2
+      removeIfReleased: true
+    schedule:
+      type: WEEKLY
+      startDateTime: '2020-10-04T08:00:00'
+      weeklyDays:
+        - MON
+        - WED
+        - FRI
+        - SUN
+  - name: Run repository cleanup
+    typeId: repository.cleanup
+    enabled: true
+    alertEmail: mymail@company.com
+    notificationCondition: FAILURE
+    properties: {}
+    schedule:
+      type: WEEKLY
+      startDateTime: '2020-10-04T08:00:00'
+      weeklyDays:
+        - MON
+        - WED
+        - FRI
+        - SUN
+  - name: Reconcile data metadata from blob store
+    typeId: rebuild.asset.uploadMetadata
+    enabled: true
+    alertEmail: mymail@company.com
+    notificationCondition: FAILURE
+    properties: {}
+    schedule:
+      type: CRON
+      cron: 5 4 * * * ?
+  - name: Rebuild repository search
+    typeId: repository.rebuild-index
+    enabled: true
+    alertEmail: mymail@company.com
+    notificationCondition: FAILURE
+    properties:
+      repositoryName: "*"
+    schedule:
+      type: CRON
+      cron: 5 4 * * * ?
+  - name: Script to say hello
+    typeId: script
+    enabled: true
+    alertEmail: mymail@company.com
+    notificationCondition: SUCCESS_FAILURE
+    properties:
+      language: groovy
+      source: |-
+        log.info('hello world');
+        return 'hello world'
+    schedule:
+      type: ONCE
+      startDateTime: '2021-03-04T01:15:24'
+  - name: Free up blobstore space
+    typeId: blobstore.compact
+    enabled: true
+    alertEmail: mymail@company.com
+    notificationCondition: SUCCESS_FAILURE
+    properties:
+      blobstoreName: default
+    schedule:
+      type: MANUAL
+  - name: Rebuild repository browse
+    typeId: create.browse.nodes
+    enabled: true
+    alertEmail: mymail@company.com
+    notificationCondition: SUCCESS_FAILURE
+    properties:
+      repositoryName: "*,apt-proxy,apt-releases,helm-releases,maven-central,maven-releases,maven-snapshots"
+    schedule:
+      type: MANUAL
+  - name: Unpublish maven indexer
+    typeId: repository.maven.unpublish-dotindex
+    enabled: true
+    alertEmail: mymail@company.com
+    notificationCondition: SUCCESS_FAILURE
+    properties:
+      blobstoreName: default
+      repositoryName: maven-releases
+    schedule:
+      type: MANUAL
+  - name: Rebuild maven repository metadata
+    typeId: repository.maven.rebuild-metadata
+    enabled: true
+    alertEmail: mymail@company.com
+    notificationCondition: FAILURE
+    properties:
+      repositoryName: "*"
+      rebuildChecksums: true
+      groupId: com.company.dpto
+      artifactId: hello-service
+      baseVersion: 1.2.3
+    schedule:
+      type: MANUAL
+  - name: Reconcilie component database
+    typeId: blobstore.rebuildComponentDB
+    enabled: true
+    alertEmail: mymail@company.com
+    notificationCondition: FAILURE
+    properties:
+      dryRun: true
+      restoreBlobs: true
+      undeleteBlobs: true
+      integrityCheck: true
+      blobstoreName: local
+    schedule:
+      type: MANUAL
+  - name: Storage facet cleanup
+    typeId: repository.storage-facet-cleanup
+    enabled: true
+    alertEmail: mymail@company.com
+    notificationCondition: SUCCESS_FAILURE
+    properties: {}
+    schedule:
+      type: MANUAL
+  - name: Backup DDBB
+    typeId: db.backup
+    enabled: true
+    alertEmail: mymail@company.com
+    notificationCondition: SUCCESS_FAILURE
+    properties:
+      location: /tmp/
+    schedule:
+      type: MANUAL
+  - name: Publish maven indexer files
+    typeId: repository.maven.publish-dotindex
+    enabled: true
+    alertEmail: mymail@company.com
+    notificationCondition: SUCCESS_FAILURE
+    properties:
+      repositoryName: maven-releases
+    schedule:
+      type: MANUAL
+  - name: Reconcile npm search v1 metadata
+    typeId: repository.npm.reindex
+    enabled: true
+    alertEmail: mymail@company.com
+    notificationCondition: SUCCESS_FAILURE
+    properties:
+      repositoryName: npm-proxy
+    schedule:
+      type: MANUAL
+  - name: Delete unused components
+    typeId: repository.purge-unused
+    enabled: true
+    alertEmail: mymail@company.com
+    notificationCondition: SUCCESS_FAILURE
+    properties:
+      repositoryName: "*"
+      lastUsed: 30
+    schedule:
+      type: MANUAL
