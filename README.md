@@ -23,26 +23,28 @@ Nexus3CasC provides you a way to configure a Nexus 3 server to perform the follo
   * cleanup policies
   * routing rules
   * repositories for all formats (_maven2, npm, docker_, etc) and types (_hosted, remote_ and _group_)
-  * custom internal users
+  * internal users
   * custom roles
   * custom privileges
+  * scheduled tasks
   * LDAP connections (not available yet but in a near future :sunglasses: )
 * Deleting any unknown configuration for items like...
   * blob stores
   * content selectors
-  * clean up policies
+  * cleanup policies
   * routing rules
   * repositories
-  * LDAP connections (not available yet)
-  * local users (_anonymous_ and _admin_ users will be ignored)
+  * internal users (_anonymous_ and _admin_ users will be ignored)
   * custom roles (built-in roles will be ignored)
   * custom privileges (built-in privileges will be ignored)
+  * scheduled tasks
+  * LDAP connections (not available yet)
 
 ## How it works
 
 Nexus 3 provides a powerful [scripting API](https://help.sonatype.com/repomanager3/rest-and-integration-api/script-api) to simplify provisioning and executing other complex tasks. These scripts are written in Groovy language.
 
-Nexus3CasC takes advantage of this capability to inject some scripts in Nexus 3 using its API rest. It also reads the configuration from YAML files, connect to the Nexus 3 server and uses its API to invoke every script sending the configuration values as input arguments.
+Nexus3CasC takes advantage of this capability to inject some scripts in Nexus 3 using its API rest. It also reads the configuration from YAML files, connects to the Nexus 3 server and uses its API to invoke every script sending the configuration values as input arguments.
 
 The CLI is written in python 3.8 and the scripts for Nexus 3 are written in Groovy.
 
@@ -58,12 +60,12 @@ There is a YAML with default values at [resources/config/nexus_defaults.yaml](re
 # config/nexus_defaults.yaml
 
 nexus:
-  baseUrl: http://localhost:8081 # URL to reach Nexus 3 UI
-  anonymousAccessEnabled: false  # If anonymous users can access to Nexus 3
+  baseUrl: http://localhost:8081  # URL to reach Nexus 3 UI
+  anonymousAccessEnabled: false   # If anonymous users can access to Nexus 3
   defaults:
-    adminUser: admin             # Default admin user
-    adminPassword: admin123      # Default admin password
-  deleteUnknownItems:            # To delete existing items in Nexus but not in YAML
+    adminUser: admin              # Default admin user
+    adminPassword: admin123       # Default admin password
+  deleteUnknownItems:             # To delete existing items in Nexus but not in YAML
     blobstores: false
     contentSelectors: false
     cleanupPolicies: false
@@ -73,6 +75,7 @@ nexus:
     customLocalUsers: false
     customRoles: false
     customPrivileges: false
+    tasks: false
 
 # Enable/disable Nexus realms
 realms: []
@@ -102,7 +105,7 @@ smtpConnection:
 # Create new connections to LDAP servers
 # ldapConnections: [] # Not yet available
 
-# Create new local and LDAP users
+# Create new internal and LDAP users
 customUsers:
   local: []
   # ldap: [] # Not yet available
@@ -112,6 +115,12 @@ customRoles: []
 
 # Create new custom privileges
 customPrivileges: []
+
+# Add certificates to the trust store
+certificates: []
+
+# Create new scheduled tasks
+tasks: []
 ```
 
 > Notice that these default values are merged with the values set in your YAML files, so if you do not define one of them it will use the default one.
@@ -131,7 +140,7 @@ You can override any of the above [default values](#default-values).
 
 #### `realms`
 
-Security realms are used for authentication and authorization of different types of users. You can enable or disable as follows:
+Security realms are used for authentication and authorization of different types of users. You can enable or disable them as follows:
 
 ```yaml
 realms:
@@ -155,7 +164,7 @@ realms:
     enabled: false
 ```
 
-The list of realms could be different depending of the Nexus 3 version you use. If you include a non-existent realm it will be ignored.
+The list of realms could be different depending on the Nexus 3 version you use. If you include a non-existent realm it will be ignored.
 
 > Be careful disabling some realms such as _Local Authenticating Realm_ and _Local Authorizing Realm_. If one of them is disabled, you will not be able to login as an internal user!
 
@@ -176,18 +185,18 @@ httpClient:
     host: proxy.acme.com
     port: 8080
     authentication:
-      username: proxyuser       # required: if authentication is set
-      password: pr0xyp@ss       # required: if authentication is set
-      ntlmHost: ntlm.acme.com   # optional
-      ntlmDomain: acme.com      # optional
+      username: proxyuser      # required: if `httpProxy.authentication` is set
+      password: pr0xyp@ss      # required: if `httpProxy.authentication` is set
+      ntlmHost: ntlm.acme.com  # optional
+      ntlmDomain: acme.com     # optional
   httpsProxy:
     host: proxy.acme.com
     port: 8443
     authentication:
-      username: proxyuser       # required: if authentication is set
-      password: pr0xyp@ss       # required: if authentication is set
-      ntlmHost: ntlm.acme.com   # optional
-      ntlmDomain: acme.com      # optional
+      username: proxyuser      # required: if `httpsProxy.authentication` is set
+      password: pr0xyp@ss      # required: if `httpsProxy.authentication` is set
+      ntlmHost: ntlm.acme.com  # optional
+      ntlmDomain: acme.com     # optional
 ```
 
 #### `blobStores`
@@ -196,19 +205,19 @@ A blob store is a location where to store the _blob objects_ for binary assets.
 
 ```yaml
 blobStores:
-  - name: default             # required
-    type: file                # optional (defaults: file)
-    path: default             # optional: path can be either a relative or absolute path (defaults: `name` value)
+  - name: default  # required
+    type: file     # optional (defaults: file)
+    path: default  # optional: a relative or absolute path (defaults: `name` value)
   - name: local
   - name: remote
     type: file
     path: /tmp/custom/remote
   - name: s3-blobstore
-    type: s3                                                      # Use `type: s3` to store blobs in AWS S3 bucket
-    config:                                                       # required if`type: s3`
-      bucket: s3-blobstore                                        # required if`type: s3`
-      accessKeyId: AKIAIOSFODNN7EXAMPLE                           # required if`type: s3`
-      secretAccessKey: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY   # required if`type: s3`
+    type: s3                                                     # Use `type: s3` to store blobs in AWS S3 bucket
+    config:                                                      # required if`type: s3`
+      bucket: s3-blobstore                                       # required if`type: s3`
+      accessKeyId: AKIAIOSFODNN7EXAMPLE                          # required if`type: s3`
+      secretAccessKey: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY  # required if`type: s3`
 ```
 
 #### `cleanupPolicies`
@@ -217,15 +226,15 @@ The cleanup feature is a way of removing components from your repositories using
 
 ```yaml
 cleanupPolicies:
-  - name: purge-snapshots                               # required
-    format: maven2                                      # required
-    notes: "Delete maven snapshots downloaded > 7 days" # optional
-    mode: delete                                        # optional (defaults: delete)
-    criteria:                                           # required
-      lastBlobUpdated: 30                               # optional: must be a number > 0
-      lastDownloaded: 7                                 # optional: must be a number > 0
-      preRelease: PRERELEASES                           # optional: RELEASES or PRERELEASES
-      regexKey: (org|com)/.*                            # optional: must be a regex pattern
+  - name: purge-snapshots                                # required
+    format: maven2                                       # required
+    notes: "Delete maven snapshots downloaded > 7 days"  # optional
+    mode: delete                                         # optional (defaults: delete)
+    criteria:                                            # required
+      lastBlobUpdated: 30                                # optional: must be a number > 0
+      lastDownloaded: 7                                  # optional: must be a number > 0
+      preRelease: PRERELEASES                            # optional: RELEASES or PRERELEASES
+      regexKey: (org|com)/.*                             # optional: must be a regex pattern
   - name: purge-helm-artifacts-with-one-year
     format: helm
     notes: Delete helm artifacts older than 1 year
@@ -261,10 +270,10 @@ Content selectors provide a way to select specific content from all of your cont
 
 ```yaml
 contentSelectors:
-  - name: helm-all-selector                       # required
-    format: csel                                  # optional (defaults: csel)
-    description: Search for all helm artifacts    # optional
-    expression: format == "helm"                  # required
+  - name: helm-all-selector                     # required
+    format: csel                                # optional (defaults: csel)
+    description: Search for all helm artifacts  # optional
+    expression: format == "helm"                # required
   - name: raw-selector
     format: csel
     description: Search for raw artifacts in specific path
@@ -279,37 +288,37 @@ Create repositories to store artifacts for different formats and sources.
 repositories:
 
   # Hosted repositories
-  - name: helm-releases                                 # required
-    format: helm                                        # required: any type which supports hosted repositories
-    type: hosted                                        # required: must be "hosted"
-    online: true                                        # optional (defaults: false)
-    storage:                                            # required
-      blobStoreName: local                              # required
-      strictContentTypeValidation: true                 # required: true or false
-      writePolicy: ALLOW_ONCE                           # required: ALLOW, ALLOW_ONCE or DENY
-    cleanup:                                            # optional
+  - name: helm-releases                                  # required
+    format: helm                                         # required: any format which supports hosted repositories
+    type: hosted                                         # required: must be "hosted"
+    online: true                                         # optional (defaults: false)
+    storage:                                             # required
+      blobStoreName: local                               # required
+      strictContentTypeValidation: true                  # required
+      writePolicy: ALLOW_ONCE                            # required: ALLOW, ALLOW_ONCE or DENY
+    cleanup:                                             # optional
       policyNames:
       - remove-old-helm-artifacts
-    apt:                                                # required: if `format: apt`
-      distribution: bionic                              # required
-    aptSigning:                                         # required: if `format: apt`
-      keypair: 515F58C16D58E682E91ACEFF17B5C97F9A816AD7 # required
-      passphrase: keep my account safe                  # required
-    docker:                                             # required: if `format: docker`
-      v1Enabled: false                                  # optional (defaults: false)
-      forceBasicAuth: true                              # optional (defaults: false)
-      httpPort: 5001                                    # optional
-      httpsPort: 5000                                   # optional
-    maven:                                              # required: if `format: maven2`
-      versionPolicy: SNAPSHOT                           # required: RELEASE, SNAPSHOT or MIXED
-      layoutPolicy: PERMISSIVE                          # required: STRICT or PERMISSIVE
-    yum:                                                # required: if `format: yum`
-      repodataDepth: 5                                  # required
-      deployPolicy: STRICT                              # required
+    apt:                                                 # required: if `format: apt`
+      distribution: bionic                               # required
+    aptSigning:                                          # required: if `format: apt`
+      keypair: 515F58C16D58E682E91ACEFF17B5C97F9A816AD7  # required
+      passphrase: keep my account safe                   # required
+    docker:                                              # required: if `format: docker`
+      v1Enabled: false                                   # optional (defaults: false)
+      forceBasicAuth: true                               # optional (defaults: false)
+      httpPort: 5001                                     # optional
+      httpsPort: 5000                                    # optional
+    maven:                                               # required: if `format: maven2`
+      versionPolicy: SNAPSHOT                            # required: RELEASE, SNAPSHOT or MIXED
+      layoutPolicy: PERMISSIVE                           # required: STRICT or PERMISSIVE
+    yum:                                                 # required: if `format: yum`
+      repodataDepth: 5                                   # required
+      deployPolicy: STRICT                               # required
 
   # Remote repositories
   - name: yum-proxy                               # required
-    format: yum                                   # required: any type which supports proxy repositories
+    format: yum                                   # required: any format which supports proxy repositories
     type: proxy                                   # required: must be "proxy"
     online: true                                  # optional (defaults: false)
     storage:                                      # required
@@ -330,15 +339,15 @@ repositories:
       blocked: false                              # optional (defaults: false)
       autoBlock: true                             # optional (defaults: false)
       connection:                                 # optional (defaults: {})
-        retries:                                  # optional
-        userAgentSuffix:                          # optional
+        retries: 3                                # optional
+        userAgentSuffix: "NXRM3-client"           # optional
         timeout: 30                               # optional
         enableCircularRedirects: false            # optional (defaults: false)
         enableCookies: false                      # optional (defaults: false)
         useTrustStore: true                       # optional (defaults: false)
       authentication:                             # optional (defaults: {})
-        username: proxyuser                       # required: if authentication is set
-        password: pr0xyp@ss                       # required: if authentication is set
+        username: proxyuser                       # required: if `httpClient.authentication` is set
+        password: pr0xyp@ss                       # required: if `httpClient.authentication` is set
         ntlmHost: ntlm.acme.com                   # optional
         ntlmDomain: acme.com                      # optional
     bower:                                        # required: if `format: bower`
@@ -348,8 +357,8 @@ repositories:
     docker:                                       # required: if `format: docker`
       v1Enabled: false                            # optional (defaults: false)
       forceBasicAuth: true                        # optional (defaults: false)
-      httpPort: 5001                              # optional
-      httpsPort: 5000                             # optional
+      httpPort: 5001                              # optional: must be a valid port number
+      httpsPort: 5000                             # optional: must be a valid port number
     dockerProxy:                                  # required: if `format: docker`
       indexType: CUSTOM                           # required: HUB, REGISTRY or CUSTOM
       indexUrl: https://index.docker.io/          # required: if `dockerProxy.indextype: CUSTOM`
@@ -359,21 +368,21 @@ repositories:
 
   # Group repositories
   - name: npm-group                      # required
-    format: npm                          # required: any type which supports group repositories
+    format: npm                          # required: any format which supports group repositories
     type: group                          # required: must be "group"
     online: true                         # optional (defaults: false)
     storage:                             # required
       blobStoreName: group               # required
-      strictContentTypeValidation: true  # required: true or false
+      strictContentTypeValidation: true  # required
     group:                               # required
-      memberNames:                       # required: at least 1 repository for the same type
+      memberNames:                       # required: at least 1 repository for the same format
       - npm-hosted
       - npm-proxy
     docker:                              # required: if `type: docker`
       v1Enabled: false                   # optional (defaults: false)
       forceBasicAuth: true               # optional (defaults: false)
-      httpPort: 5001                     # optional: must be a valid port
-      httpsPort: 5000                    # optional: must be a valid port
+      httpPort: 5001                     # optional: must be a valid port number
+      httpsPort: 5000                    # optional: must be a valid port number
 ```
 
 #### `smtpConnection`
@@ -396,10 +405,6 @@ smtpConnection:
   nexusTrustStoreEnabled: false         # optional (defaults: false)
 ```
 
-#### `ldapConnections`
-
-Not available yet.
-
 #### `customUsers`
 
 Add additional users to log in Nexus 3.
@@ -412,22 +417,22 @@ customUsers:
       firstName: James                  # required
       lastName: Brown                   # required
       emailAddress: jbrown@example.com  # required
-      status: disabled                  # optional: active, locked, disabled or changepassword (defaults: disabled)
+      status: DISABLED                  # optional: ACTIVE, LOCKED, DISABLED or CHANGEPASSWORD (defaults: DISABLED)
       roles:                            # required
         - my-admin-role
     - userId: anonymous
-      password:
+      password:                         # can be null for anonymous user
       firstName: Anonymous
       lastName: User
       emailAddress: anonymous@example.org
-      status: active
+      status: ACTIVE
       roles:
         - nx-anonymous
     - userId: admin
       firstName: Administrator
       lastName: User
       emailAddress: admin@example.org
-      status: active
+      status: ACTIVE
       roles:
         - nx-admin
   ```
@@ -464,18 +469,18 @@ Privileges control access to specific functionality of the repository manager an
 customPrivileges:
 
   # These are privileges that use patterns to group other privileges
-  - type: wildcard                              # required: wildcard, application, repository-admin, repository-view, repository-content-selector or script
-    name: my-wildcard-all                       # required
-    description: All permissions                # optional
-    pattern: "nexus:*"                          # required: if `type: wildcard`
+  - type: wildcard                # required: wildcard, application, repository-admin, repository-view, repository-content-selector or script
+    name: my-wildcard-all         # required
+    description: All permissions  # optional
+    pattern: "nexus:*"            # required: if `type: wildcard`
 
   # These are privileges related to a specific domain in the repository manager
   - type: application
     name: my-app-analytics-all
     description: All permissions for Analytics
-    actions:                                    # required: if not `type: wildcard`
-      - ALL                                     # required: ADD, BROWSE, CREATE, DELETE, EDIT, READ, UPDATE OR ALL
-    domain: analytics                           # required
+    actions:                      # required: if not `type: wildcard`
+      - ALL                       # required: ADD, BROWSE, CREATE, DELETE, EDIT, READ, UPDATE OR ALL
+    domain: analytics             # required
 
   # These are privileges related to the administration and configuration of a specific repository
   - type: repository-admin
@@ -483,8 +488,8 @@ customPrivileges:
     description: All privileges for all maven repositories
     actions:
       - ALL
-    format: maven2                              # required: if `type: repository-admin`
-    repository: "*"                             # required: can be any repository name or "*" for all repositories
+    format: maven2                # required: if `type: repository-admin`
+    repository: "*"               # required: can be any repository name or "*" for all repositories
 
   # These are privileges controlling access to the content of a specific repository
   - type: repository-view
@@ -505,8 +510,8 @@ customPrivileges:
       - CREATE
       - EDIT
       - UPDATE
-    repository: "*-raw"                         # required: *-raw selects all repositories names which end with -raw
-    contentSelector: raw-selector               # required
+    repository: "*-raw"            # required: *-raw selects all repositories which their names end with -raw
+    contentSelector: raw-selector  # required
 
   # These are privileges related to the execution and management of scripts
   - type: script
@@ -515,7 +520,7 @@ customPrivileges:
     actions:
       - ADD
       - READ
-    scriptName: "*"                             # required: can be a script name or "*" for all scripts
+    scriptName: "*"                # required: can be a script name or "*" for all scripts
 ```
 
 #### `certificates`
@@ -529,8 +534,8 @@ certificates:
     - conan.bintray.com:443             # host + port
     - https://cran.r-project.org        # protocol + host
     - https://download.eclipse.org:443  # protocol + host + port
-  pemTexts:                             # optional
-    - content: |-                       # must be `content: <PEM_CERTIFICATE_CONTENT>`
+  certs:                                # optional
+    - pem: |-                           # must be `pem: <PEM_CERTIFICATE_CONTENT>`
         -----BEGIN CERTIFICATE-----
         MIIHTjCCBjagAwIBAgIQa5LMK51h2Z4IAAAAAEZzsTANBgkqhkiG9w0BAQsFADBC
         MQswCQYDVQQGEwJVUzEeMBwGA1UEChMVR29vZ2xlIFRydXN0IFNlcnZpY2VzMRMw
@@ -575,7 +580,7 @@ certificates:
         -----END CERTIFICATE-----
 ```
 
-If you want to use PEM certificates, you can get it and transform it into PEM with:
+If you want to extract PEM certificates from your servers, you can do this:
 
 ```sh
 $ openssl s_client -showcerts -connect registry.npmjs.org:443 </dev/null 2>/dev/null | openssl x509 -outform PEM
@@ -609,7 +614,127 @@ ZBg=
 -----END CERTIFICATE-----
 ```
 
-Copy the content and paste it as a new entry at `certificates.pemTexts[].content`
+Copy the content and paste it as a new entry at `certificates.certs[].pem`
+
+### tasks
+
+Create tasks to schedule the execution of maintenance steps that will be applied to all repositories or to specific repositories on a configurable schedule or simply perform other system maintenance.
+
+```yaml
+tasks:
+  - name: Task name                          # required
+    typeId: repository.yum.rebuild.metadata  # required: any of the available task ids
+    alertEmail: mymail@company.com           # optional
+    notificationCondition: FAILURE           # optional: FAILURE or SUCCESS_FAILURE (defaults: FAILURE)
+    properties:                              # optional: but it can be required if typeId needs additional conf keys (see below examples)
+
+      ## if `typeId: repository.yum.rebuild.metadata` set this:
+      # yumMetadataCaching: true             # optional (defaults: false)
+      # repositoryName: yum-hosted           # required: yum hosted repository name
+
+      ## if `typeId: repository.docker.gc` you should config this line
+      # repositoryName: "*"                  # required: a docker repo name or "*" for all docker repos
+
+      ## if `typeId: repository.npm.reindex` set this:
+      # repositoryName: npm-proxy            # required: a npm repo name or "*" for all npm repos
+
+      ## if `typeId: repository.purge-unused` set this:
+      # repositoryName: "*"                  # required: a repo name or "*" for all
+      # lastUsed: 30                         # required
+
+      ## if `typeId: repository.rebuild-index` set this:
+      # repositoryName: "*"                  # required: a repo name or "*" for all
+
+      ## if `typeId: repository.maven.purge-unused-snapshots` set this:
+      # repositoryName: "*"                  # required: a maven repo name or "*" for all maven repos
+      # lastUsed: 30                         # required
+
+      ## if `typeId: repository.maven.remove-snapshots` set this:
+      # repositoryName: maven-central        # required: a maven repo name or "*" for all maven repos
+      # minimumRetained: 3                   # required
+      # snapshotRetentionDays: 30            # required
+      # gracePeriodInDays: 2                 # optional (defaults: 0)
+      # removeIfReleased: true               # optional (defaults: false)
+
+      ## if `typeId: repository.maven.publish-dotindex` set this:
+      # repositoryName: maven-releases       # required: a maven repo name or "*" for all maven repos
+
+      ## if `typeId: repository.maven.unpublish-dotindex` set this:
+      # blobstoreName: default               # required
+      # repositoryName: maven-releases       # required: a maven repo name or "*" for all maven repos
+
+      ## if `typeId: repository.maven.rebuild-metadata` set this:
+      # repositoryName: "*"                  # required: can be a maven repo name or "*" for all maven repos
+      # rebuildChecksums: true               # optional (defaults: false)
+      # groupId: com.company.dpto            # optional
+      # artifactId: hello-service            # optional
+      # baseVersion: 1.2.3                   # optional
+
+      ## if `typeId: script` set this:
+      # language: groovy                     # optional
+      # source: |-                           # required
+      #   log.info('hello world');
+      #   return 'hello world'
+
+      ## if `typeId: create.browse.nodes` set this:
+      # repositoryName: "apt-proxy,helm-releases,maven-central"   # required: a list of hosted and proxy repositories or "*" for all
+
+      ## if `typeId: blobstore.compact` set this:
+      # blobstoreName: default               # required
+
+      ## if `typeId: blobstore.rebuildComponentDB` set this:
+      # dryRun: true                         # optional (defaults: false)
+      # restoreBlobs: true                   # optional (defaults: true)
+      # undeleteBlobs: true                  # optional (defaults: true)
+      # integrityCheck: true                 # optional (defaults: true)
+      # blobstoreName: local                 # required
+
+      ## if `typeId: db.backup` set this:
+      # location: /tmp/                      # required
+
+    schedule:
+      type: NOW                              # required: NOW, ONCE, HOURLY, DAILY, WEEKLY, CRON or MANUAL
+      startDateTime: '2021-03-04T01:15:24'   # required: if `schedule.type` is ONCE, HOURLY, DAILY or WEEKLY. Valid format: "yyyy-MM-dd'T'HH:mm:ss"
+      weeklyDays:                            # required: if `schedule.type: WEEKLY`
+        - MON
+        - TUE
+        - WED
+        - THU
+        - FRI
+        - SAT
+        - SUN
+      cron: 5 4 * * * ?                      # required: if `schedule.type: CRON`
+
+  # A valid task looks like this
+  - name: Delete SNAPSHOTS
+    typeId: repository.maven.remove-snapshots
+    enabled: true
+    alertEmail: mymail@company.com
+    notificationCondition: FAILURE
+    properties:
+      repositoryName: maven-central
+      minimumRetained: 3
+      snapshotRetentionDays: 30
+      gracePeriodInDays: 2
+      removeIfReleased: true
+    schedule:
+      type: weekly
+      startDateTime: '2020-10-04T08:00:00'
+      weeklyDays:
+        - MON
+        - WED
+        - FRI
+        - SUN
+  
+```
+
+You can see type id available at [Types of Tasks and When to Use Them](https://help.sonatype.com/repomanager3/system-configuration/tasks#Tasks-TypesofTasksandWhentoUseThem) from the Nexus official documentation.
+
+Check out [examples/config/yaml/nexus.yaml](examples/config/yaml/nexus.yaml) for more examples.
+
+#### `ldapConnections`
+
+Not available yet.
 
 ## Run the CLI
 
@@ -619,7 +744,24 @@ First, you have to install dependencies with [`pipenv`](https://github.com/pypa/
 pipenv install
 ```
 
-After that, you can run the CLI with:
+After that, you have two ways to run the CLI:
+
+```text
+# Activate the shell to load the virtualenv
+$ pipenv shell
+
+# Run the CLI with:
+$ ./nexus3casc.py
+```
+
+Or, you also can do this:
+
+```text
+# Use pipenv run to load the virtualenv and execute the CLI
+$ pipenv run nexus3casc
+```
+
+If you run it without passing any argument, the help section will be displayed:
 
 ```text
 $ pipenv run nexus3casc
@@ -690,31 +832,30 @@ First, you create as many configmaps and/or secrets as you want to store the con
 ```yaml
 apiVersion: v1
 kind: Secret
-data:
-  nexus-secrets.yaml: bmV4dXM6CiAgICBhZG1pblBhc3N3b3JkOiBteVN1cDNyUEBzc3cwcmQ=
 metadata:
+  name: nexus-casc-secrets
+  namespace: nexus
   labels:
     app: sonatype-nexus
     nexus3casc: active
-  name: nexus-casc-secrets
-  namespace: nexus
 type: Opaque
+data:
+  nexus-secrets.yaml: bmV4dXM6CiAgICBhZG1pblBhc3N3b3JkOiBteVN1cDNyUEBzc3cwcmQ=
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  labels:
-    nexus3casc: active
-    another-label: another-value
   name: sonatype-nexus-casc
   namespace: nexus
+  labels:
+    another-label: another-value
+    nexus3casc: active
 data:
-  nexus.yaml: |
+  nexus.yml: |
     nexus:
       anonymousAccessEnabled: false
     realms:
       - name: Docker Bearer Token Realm
-        enabled: true
         enabled: true
       - name: npm Bearer Token Realm
         enabled: true
@@ -726,7 +867,7 @@ data:
   greeting.txt: hello world
 ```
 
-You have to put your configuration in keys ending with a valid YAML file extension (`.yaml` or `.yml`). In the above example only `nexus-secrets.yaml` and `nexus.yaml` will be consider. Also, notice that the label `nexus3casc` exists in both manifests. You can put the label name (required) and the label value (optional) you want.
+You have to put your configuration in keys ending with a valid YAML file extension (`.yaml` or `.yml`). In the above example only `nexus-secrets.yaml` and `nexus.yml` will be considered. Also, notice that the label `nexus3casc` exists in both manifests. You can put the label name (required) and the label value (optional) you want.
 
 For instance, you can execute it as follows:
 
@@ -736,11 +877,11 @@ pipenv run nexus3casc from-k8s --namespace nexus --label nexus3casc --label-valu
 
 This is what each argument does:
 
-* `--local`: search for your `KUBECONFIG` location (by default at `~/.kube/config`) and get the current k8s cluster connection
+* `--local`: searches for your `KUBECONFIG` location (by default at `~/.kube/config`) and gets the current k8s cluster connection
 * `--resource both --namespace nexus`: find secrets and configmaps in namespace `nexus`
-* `--label nexus3casc --label-value active`: filter secrets and configmpas which have the label `nexus3casc: active`
-* `--watch`: watch for changes in those resources. If one of their yaml contents are updated, then it will configure Nexus again
-* `--refresh-period 10`: search for changes every 10 seconds
+* `--label nexus3casc --label-value active`: filter secrets and configmaps which have the label `nexus3casc: active`
+* `--watch`: watches for changes in those resources. If one of their yaml contents are updated, then it will configure Nexus again
+* `--refresh-period 10`: searches for changes every 10 seconds
 
 You can type `pipenv run nexus3casc --help` to get help.
 

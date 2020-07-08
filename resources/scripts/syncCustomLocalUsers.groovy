@@ -29,7 +29,7 @@ class SyncCustomLocalUsers extends ScriptBaseClass {
         equals &= existingUser.lastName == userDef.lastName
         equals &= existingUser.emailAddress == userDef.emailAddress
         equals &= existingUser.source == AuthorizationManagerImpl.SOURCE.toLowerCase()
-        equals &= existingUser.status == (userDef?.status?.toLowerCase() as UserStatus ?: UserStatus.active)
+        equals &= existingUser.status == (userDef?.status?.toLowerCase() as UserStatus ?: UserStatus.disabled)
         equals &= !existingUser.readOnly
 
         // Check if roles are different
@@ -65,7 +65,7 @@ class SyncCustomLocalUsers extends ScriptBaseClass {
         Set<RoleIdentifier> definedRoles = []
         (userDef.roles as Set<String>)?.each { String roleDef ->
             RoleIdentifier role = new RoleIdentifier(AuthorizationManagerImpl.SOURCE.toLowerCase(),
-                    authManager.getRole(roleDef).roleId);
+                    authManager.getRole(roleDef).roleId)
             definedRoles.add(role)
         }
 

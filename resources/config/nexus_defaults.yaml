@@ -14,6 +14,7 @@ nexus:
     customLocalUsers: false
     customRoles: false
     customPrivileges: false
+    tasks: false
 
 realms: []
 
@@ -41,3 +42,7 @@ customUsers:
 customRoles: []
 
 customPrivileges: []
+
+certificates: []
+
+tasks: []

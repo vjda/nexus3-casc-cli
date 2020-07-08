@@ -13,6 +13,7 @@ scripts:
   - name: syncRepositories
   - name: setupBaseUrl
   - name: setupHttpProxy
+  - name: syncScheduledTasks
   - name: syncTrustStore
   - name: setupEmailServer
   - name: setupAdminPassword
