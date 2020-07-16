@@ -196,4 +196,4 @@ class SyncScheduledTasks extends ScriptBaseClass {
     }
 }
 
-return new SyncScheduledTasks(syncScheduledTasks).execute()
+return new SyncScheduledTasks(this).execute()
