@@ -761,36 +761,36 @@ smtpConnection:
   nexusTrustStoreEnabled: false
 
 ldapConnections:
-  - name: ldap-server
-    protocol: ldap
+  - name: jumpcloud
+    protocol: LDAPS
     useTrustStore: true
-    host: string
+    host: ldap.jumpcloud.com
     port: 636
-    searchBase: dc=example,dc=com
-    authScheme: NONE
-    authRealm: example.com
-    authUsername: string
-    connectionTimeoutSeconds: 1
-    connectionRetryDelaySeconds: 0
-    maxIncidentsCount: 0
-    userBaseDn: ou=people
+    searchBase: ou=Users,o=5f0ded99b3a9ef1305a22b22,dc=jumpcloud,dc=com
+    authScheme: SIMPLE
+    authRealm: example.com # optional if DIGEST-MD5 or CRAM-MD5
+    authUsername: ou=Users,o=5f0ded99b3a9ef1305a22b22,dc=jumpcloud,dc=com
+    authPassword: ldap1234
+    connectionTimeoutSeconds: 15 # optional 30
+    connectionRetryDelaySeconds: 100 # optional 300
+    maxIncidentsCount: 2 # optional 3
+    userBaseDn:
     userSubtree: true
     userObjectClass: inetOrgPerson
-    userLdapFilter: "(|(mail=*@example.com)(uid=dom*))"
+    userLdapFilter:
     userIdAttribute: uid
     userRealNameAttribute: cn
     userEmailAddressAttribute: mail
-    userPasswordAttribute: string
+    userPasswordAttribute:
     ldapGroupsAsRoles: true
     groupType: static
-    groupBaseDn: ou=Group
-    groupSubtree: true
-    groupObjectClass: posixGroup
-    groupIdAttribute: cn
-    groupMemberAttribute: memberUid
-    groupMemberFormat: uid=${username},ou=people,dc=example,dc=com
-    userMemberOfAttribute: memberOf
-    authPassword: superpass123
+    groupBaseDn: # optional if groupType=static
+    groupSubtree: true # optional if groupType=static
+    groupObjectClass: groupOfNames # optional if groupType=static
+    groupIdAttribute: cn # optional if groupType=static
+    groupMemberAttribute: member # optional if groupType=static
+    groupMemberFormat: uid=${username},ou=Users,o=5f0ded99b3a9ef1305a22b22,dc=jumpcloud,dc=com # optional if groupType=static
+    userMemberOfAttribute: memberOf # if groupType=dynamic
 
 customUsers:
   local:
@@ -799,16 +799,13 @@ customUsers:
       firstName: Anonymous
       lastName: User
       emailAddress: anonymous@example.org
-
       status: ACTIVE
       roles:
         - nx-anonymous
-
     - userId: admin
       firstName: Administrator
       lastName: User
       emailAddress: admin@example.org
-
       status: ACTIVE
       roles:
         - nx-admin
@@ -817,28 +814,28 @@ customUsers:
       firstName: James
       lastName: Brown
       emailAddress: jbrown@example.com
-
       status: ACTIVE
       roles:
         - my-admin-role
-  ldap: []
-  # ldap:
-  #   - username: j.doe
-  #     state: present
-  #     roles:
-  #       - "nx-admin"
+  ldap:
+    - username: magneto
+      roles:
+        - nx-admin
+    - username: lobezno
+      roles:
+        - custom-maven-developer-role
 
 customRoles:
   - id: my-admin-role
     source: default
-    name: my-admin-role
+    name: My admin role
     description: Custom Administrator Role
     privileges: []
     roles:
       - nx-admin
   - id: custom-anonymous-role
     source: default
-    name: custom-anonymous-role
+    name: Custom anonymous role
     description: Custom Anonymous Role
     privileges:
       - nx-healthcheck-read
@@ -849,11 +846,20 @@ customRoles:
   - id: custom-maven-developer-role
     source: default
     name: Maven Developer
-    description: Maven Developer Role
+    description: Maven developer role
     privileges:
       - nx-repository-view-maven2-*-browse
       - nx-repository-view-maven2-*-add
       - nx-repository-view-maven2-*-read
+    roles: []
+  - id: developers
+    source: LDAP
+    name: LDAP Developer
+    description: Developer role from LDAP users
+    privileges:
+      - nx-repository-view-*-*-browse
+      - nx-repository-view-*-*-add
+      - nx-repository-view-*-*-read
     roles: []
 
 customPrivileges:

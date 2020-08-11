@@ -16,4 +16,6 @@ scripts:
   - name: syncScheduledTasks
   - name: syncTrustStore
   - name: setupEmailServer
+  - name: syncLdapConnections
+  - name: syncCustomLdapUsers
   - name: setupAdminPassword

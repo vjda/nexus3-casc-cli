@@ -27,7 +27,7 @@ Nexus3CasC provides you a way to configure a Nexus 3 server to perform the follo
   * custom roles
   * custom privileges
   * scheduled tasks
-  * LDAP connections (not available yet but in a near future :sunglasses: )
+  * LDAP connections
 * Deleting any unknown configuration for items like...
   * blob stores
   * content selectors
@@ -38,7 +38,7 @@ Nexus3CasC provides you a way to configure a Nexus 3 server to perform the follo
   * custom roles (built-in roles will be ignored)
   * custom privileges (built-in privileges will be ignored)
   * scheduled tasks
-  * LDAP connections (not available yet)
+  * LDAP connections
 
 ## How it works
 
@@ -103,12 +103,12 @@ smtpConnection:
   enabled: false
 
 # Create new connections to LDAP servers
-# ldapConnections: [] # Not yet available
+ldapConnections: []
 
-# Create new internal and LDAP users
+# Create new internal users and/or assign roles to LDAP users
 customUsers:
   local: []
-  # ldap: [] # Not yet available
+  ldap: []
 
 # Create new custom roles
 customRoles: []
@@ -463,7 +463,7 @@ customRoles:
 
 #### `customPrivileges`
 
-Privileges control access to specific functionality of the repository manager and can be grouped as a role and assigned to a specific users.
+Privileges control access to specific functionality of the repository manager and can be grouped as a role and assigned to a specific user.
 
 ```yaml
 customPrivileges:
@@ -626,13 +626,13 @@ tasks:
     typeId: repository.yum.rebuild.metadata  # required: any of the available task ids
     alertEmail: mymail@company.com           # optional
     notificationCondition: FAILURE           # optional: FAILURE or SUCCESS_FAILURE (defaults: FAILURE)
-    properties:                              # optional: but it can be required if typeId needs additional conf keys (see below examples)
+    properties:                              # optional: it can be required if `typeId` needs additional conf keys (see below examples)
 
       ## if `typeId: repository.yum.rebuild.metadata` set this:
       # yumMetadataCaching: true             # optional (defaults: false)
       # repositoryName: yum-hosted           # required: yum hosted repository name
 
-      ## if `typeId: repository.docker.gc` you should config this line
+      ## if `typeId: repository.docker.gc` set this
       # repositoryName: "*"                  # required: a docker repo name or "*" for all docker repos
 
       ## if `typeId: repository.npm.reindex` set this:
@@ -728,13 +728,53 @@ tasks:
   
 ```
 
-You can see type id available at [Types of Tasks and When to Use Them](https://help.sonatype.com/repomanager3/system-configuration/tasks#Tasks-TypesofTasksandWhentoUseThem) from the Nexus official documentation.
+`typeId` and task-specific `properties` can be guessed either:
+
+* from the java type hierarchy of `org.sonatype.nexus.scheduling.TaskDescriptorSupport`
+* by inspecting the task creation html form in your browser
+* from peeking at the browser AJAX requests while manually configuring a task
+
+Also, you can see the type ids available at [Types of Tasks and When to Use Them](https://help.sonatype.com/repomanager3/system-configuration/tasks#Tasks-TypesofTasksandWhentoUseThem) from the Nexus official documentation.
 
 Check out [examples/config/yaml/nexus.yaml](examples/config/yaml/nexus.yaml) for more examples.
 
 #### `ldapConnections`
 
-Not available yet.
+You can use the Lightweight Directory Access Protocol (LDAP) for authentication via external systems providing LDAP support such as Microsoft Exchange/Active Directory, OpenLDAP, ApacheDS and others.
+
+```yaml
+ldapConnections:
+  - name: jumpcloud                     # required
+    protocol: LDAPS                     # required: LDAP or LDAPS
+    useTrustStore: true                 # optional (defaults: false)
+    host: ldap.jumpcloud.com            # required
+    port: 636                           # required: must be a valid port number
+    searchBase: ou=Users,o=5f0ded99b3a9ef1305a22b22,dc=jumpcloud,dc=com   # required
+    authScheme: SIMPLE                  # required: SIMPLE, DIGEST-MD5, CRAM-MD5 or NONE
+    authRealm: example.com              # optional: if `authScheme` is DIGEST-MD5 or CRAM-MD5
+    authUsername: ou=Users,o=5f0ded99b3a9ef1305a22b22,dc=jumpcloud,dc=com   # required if `authScheme` is not NONE
+    authPassword: ldap1234              # required: if `authScheme` is not NONE
+    connectionTimeoutSeconds: 15        # optional (defaults: 30)
+    connectionRetryDelaySeconds: 100    # optional (defaults: 300)
+    maxIncidentsCount: 2                # optional (defaults: 3)
+    userBaseDn:                         # optional
+    userSubtree: true                   # optional (defaults: false)
+    userObjectClass: inetOrgPerson      # required
+    userLdapFilter:                     # optional
+    userIdAttribute: uid                # required
+    userRealNameAttribute: cn           # required
+    userEmailAddressAttribute: mail     # required
+    userPasswordAttribute:              # optional
+    ldapGroupsAsRoles: true             # optional (defaults: false)
+    groupType: STATIC                   # required: if `ldapGroupsAsRoles` is true. It can be STATIC or DYNAMIC
+    groupBaseDn:                        # optional: only set if `groupType` is STATIC
+    groupSubtree: true                  # optional: only set if `groupType` is STATIC (defaults: false)
+    groupObjectClass: groupOfNames      # optional: only set if `groupType` is STATIC
+    groupIdAttribute: cn                # optional: only set if `groupType` is STATIC
+    groupMemberAttribute: member        # optional: only set if `groupType` is STATIC
+    groupMemberFormat: uid=${username},ou=Users,o=5f0ded99b3a9ef1305a22b22,dc=jumpcloud,dc=com   # optional: only set if `groupType` is STATIC
+    userMemberOfAttribute: memberOf     # optional: only set if `groupType` is DYNAMIC
+```
 
 ## Run the CLI
 
