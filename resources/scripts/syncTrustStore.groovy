@@ -1,4 +1,4 @@
-import com.sonatype.nexus.ssl.plugin.internal.CertificateRetriever
+import org.sonatype.nexus.ssl.CertificateRetriever
 import org.apache.http.client.utils.URIBuilder
 import org.sonatype.nexus.ssl.KeyNotFoundException
 import org.sonatype.nexus.ssl.TrustStore
